@@ -1,0 +1,96 @@
+k: 20
+model_name: 64x64-Kmeans_MSE_epoch4
+batch_size: 2
+iterations: 10000 #eval = 100
+grad_clip_max_norm: null # change to float to activate
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.001
+  weight_decay: 1e-3  
+  # _target_: torch.optim.SGD
+  # lr: 0.1
+  # weight_decay: 5e-4
+  # momentum: 0.1
+  # nesterov: true
+scheduler:
+  _target_: torch.optim.lr_scheduler.MultiStepLR
+  milestones: [1000, 5000]
+  gamma: 0.2
+auto_cpu_if_no_gpu: true
+device: cuda:0
+generator_path: './checkpoint/generators/stylegan2-ffhq-config-f.pt'
+
+#train
+tensorboard: True
+eval_freq: 1000 # epoch = iterations // eval_freq
+eval_iters: 100
+feed_layers: null
+model_load_path: null
+
+kmeans:
+  use_kmeans: True
+  kmeans_model_path: './checkpoint/kmeans/k_means_human_64x64x512_7_clusters_200.pkl'
+  k_th_cluster: 4
+  use_mse_loss: True
+
+generator:
+  # _target_: generators.BigGANGenerator #BigGAN
+  # resolution: 256
+  # device: cuda
+  # truncation: 0.4
+  # class_name: husky
+  # feature_layer: generator.layers.0
+  _target_: models.generators.stylegan2.stylegan2_wrap.StyleGAN2Generator ##StyleGAN2
+  truncation: 0.7
+  class_name: ffhq
+  use_w: true
+  feature_layer: convs.7 # conv1: 4*4 , [convs.0, convs.1] : 8*8,  [convs.2, convs.3] : 16*16, [convs.4, convs.5] : 32*32,  [convs.6, convs.7] : 64*64,
+
+#checkpoint_path:
+model:
+  size: 512 # StyleGANs: 512  BigGAN256: 128
+  _target_: model.NonlinearConditional
+  normalize: True
+  alpha: 0.1
+  depth: 3
+  final_ac: False
+
+loss:
+  _target_: loss.ContrastiveLoss
+  temp: 0.5
+  abs: True
+  reduce: mean
+
+# version: 1  # logging
+# formatters:
+#   simple:
+#     format: '%(message)s'
+#   time:
+#     format: '[%(asctime)s]- %(message)s'
+# handlers:
+#   console:
+#     class: logging.StreamHandler
+#     formatter: simple
+#     stream: ext://sys.stdout
+#   file:
+#     class: logging.FileHandler
+#     formatter: time
+#     # relative to the job log directory
+#     filename: ${hydra.job.name}.log
+# root:
+#   level: INFO
+#   handlers: [console, file]
+
+# disable_existing_loggers: false
+
+# run: #output
+#   dir: outputs/run/${hydra.job.name}/${generator._target_}/${generator.feature_layer}_${generator.class_name}_${k}/${model._target_}_${projector._target_}/${now:%Y-%m-%d}
+# sweep:
+#   dir: outputs/multirun/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+#   subdir: ${hydra.job.num}_${hydra.job.override_dirname}
+# job:
+#   config:
+#     override_dirname:
+#       exclude_keys:
+#         - seed
+#         - device

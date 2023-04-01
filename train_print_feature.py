@@ -1,0 +1,569 @@
+import hydra
+from omegaconf import DictConfig, OmegaConf
+import logging
+import os
+import time
+from typing import List, Optional
+import torch
+import tqdm
+from torch.utils.tensorboard import SummaryWriter
+from models.generators import Generator
+from hydra.utils import instantiate
+from pathlib import Path
+import utils.training_utils as training_utils
+import utils.metrics as metrics
+import utils.log_utils as log_utils
+from models.generators.stylegan2.stylegan2_wrap import StyleGAN2Generator # StyleGAN2v2
+import pickle
+import numpy as np
+import joblib
+import matplotlib.pyplot as plt
+from utils.training_utils import *
+
+class Trainer:
+    """Model trainer
+    Args:
+        model: model to train
+        loss_fn: loss function
+        optimizer: model optimizer
+        generator: pretrained generator
+        batch_size: number of batch elements
+        iterations: number of iterations
+        scheduler: learning rate scheduler
+        grad_clip_max_norm: gradient clipping max norm (disabled if None)
+        writer: writer which logs metrics to TensorBoard (disabled if None)
+        save_path: folder in which to save models (disabled if None)
+        checkpoint_path: path to model checkpoint, to resume training
+    """
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        loss_fn: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        generator: Generator,
+        batch_size: int,
+        iterations: int,
+        device: torch.device,
+        eval_freq: int = 1000,
+        eval_iters: int = 100,
+        scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+        grad_clip_max_norm: Optional[float] = None,
+        writer: Optional[SummaryWriter] = None,
+        save_path: Optional[str] = None,
+        checkpoint_path: Optional[str] = None,
+        feed_layers: Optional[List[int]] = None,
+        use_kmeans: bool = False,
+        k_th_cluster: int = 5,
+        kmeans_model_path:str = "",
+        use_mse =  False
+    ) -> None:
+
+        # Logging / Saving  / Device
+        self.logger = logging.getLogger()
+        self.writer = writer
+        self.save_path = save_path
+        print(save_path)
+        self.device = device
+
+        # Model
+        self.model = model
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
+        self.generator = generator
+        self.feed_layers = feed_layers
+
+        #Eval
+        self.eval_freq = eval_freq
+        self.eval_iters = eval_iters
+
+        # Scheduler
+        self.scheduler = scheduler
+        self.grad_clip_max_norm = grad_clip_max_norm
+
+        # Batch & Iteration
+        self.batch_size = batch_size
+        self.iterations = iterations
+        self.start_iteration = 0
+
+        # Metrics
+        self.train_acc_metric = metrics.LossMetric()
+        self.train_loss_metric = metrics.LossMetric()
+
+        self.val_acc_metric = metrics.LossMetric()
+        self.val_loss_metric = metrics.LossMetric()
+
+        # Best
+        self.best_loss = -1
+
+        # Segmentation
+        self.use_kmeans = use_kmeans
+        self.use_mse = use_mse
+        self.kmeans_model_path = kmeans_model_path
+        if use_kmeans == True:
+            self.kmeans_model = joblib.load(self.kmeans_model_path) #加载kmeans模型
+            # with open(self.kmeans_model_path, "rb") as f:
+            #     self.kmeans_model = pickle.load(f)
+            self.k_th_cluster = k_th_cluster
+
+        if use_mse == True:
+            self.mse_loss = torch.nn.MSELoss()
+
+    def _kmeans_predict(self,feats,kmeans_model):
+        
+        """
+        kmeans预测特征图类别的函数，输出语义分割图。
+
+        Args:
+            feats: 从GAN中提取的特征图。
+            kmeans_model: 加载的kmeans模型，用于对feats_formask分割。
+        """
+        
+        feats_new = feats.permute(0, 2, 3, 1).reshape(-1, feats.shape[1])
+        arr = feats_new.detach().cpu().numpy()
+        #检查NAN、无穷大
+        arr[np.isnan(arr)]=0
+        arr[np.isinf(arr)]=0
+        labels = kmeans_model.predict(arr)
+        labels_spatial = labels.reshape(feats.shape[0], feats.shape[2], feats.shape[3])
+        return labels_spatial
+
+    def train(self) -> None:
+        """Trains the model"""
+        self.logger.info("Beginning training")
+        start_time = time.time()
+
+        epoch = 0
+        iteration = self.start_iteration
+        while iteration < self.iterations:
+            if iteration + self.eval_freq < self.iterations:
+                num_iters = self.eval_freq
+            else:
+                num_iters = self.iterations - iteration
+
+            start_epoch_time = time.time()
+
+            self._train_loop(epoch, num_iters)
+
+            self._val_loop(epoch, self.eval_iters)
+
+            epoch_time = time.time() - start_epoch_time
+            self._end_loop(epoch, epoch_time, iteration)
+
+            iteration += num_iters
+            epoch += 1
+
+        train_time_h = (time.time() - start_time) / 3600
+        self.logger.info(f"Finished training! Total time: {train_time_h:.2f}h")
+        self._save_model(
+            os.path.join(self.save_path, "model_epoch%d.pt"%epoch), self.iterations
+        )
+
+    def _train_loop(self, epoch: int, iterations: int) -> None:
+        """
+        Regular train loop
+
+        Args:
+            epoch: current epoch
+            iterations: iterations to run model
+        """
+        # Progress bar
+        pbar = tqdm.tqdm(total=iterations, leave=False)
+        pbar.set_description(f"Epoch {epoch} | Train")
+
+        # Set to train
+        self.model.train()
+
+        # Set to eval
+        self.generator.eval()
+
+        for i in range(iterations):
+            #z = self.generator.sample_latent(self.batch_size, seed=0).to(self.device)
+            #fix seed
+            set_seed(5)
+            z = torch.randn(3, 512).to(device)
+
+            z_orig = z
+
+            # Original features
+            with torch.no_grad():
+                orig_feats = self.generator.get_features(z)
+            #获取语义分割
+            if self.use_kmeans:
+                orig_feats_unchange = orig_feats.clone()
+                labels_spatial= self._kmeans_predict(orig_feats_unchange,self.kmeans_model)
+                #orig_feats = training_utils.feature_reshape_norm(orig_feats)
+                # for img_id in range(3): # features.shape[0]
+                #   print('img_id_%d'%(img_id))
+                #   #输出图像
+                #   # plt.axis('off') # 去坐标轴
+                #   # plt.xticks([]) # 去刻度
+                #   # plt.imshow(norm_ip(imgs[img_id, :, :, :], min=-1.0, max=1.0).permute(1, 2, 0).numpy())
+                #   # plt.savefig('img_id_%d.jpg'%(img_id),bbox_inches='tight',pad_inches = -0.1)
+                #   # plt.show()
+
+                #   #输出segmentation, clusters
+                #   plt.axis('off') # 去坐标轴
+                #   plt.xticks([]) # 去刻度
+                #   # plt.colorbar()
+                #   plt.imshow(labels_spatial[img_id, :, :],cmap='rainbow') # cmap='rainbow' 'summer', io.show(), 没有colorbar
+                #   plt.savefig('img_id_%d.jpg'%(img_id),bbox_inches='tight',pad_inches = -0.1)
+                #   #plt.show()
+
+                #   #输出每个cluster
+                #   for i in range(5):
+                #     print('img_%d_%d_th_cluster'%(img_id,i))
+                #     plt.axis('off') # 去坐标轴
+                #     plt.xticks([]) # 去刻度
+                #     plt.imshow( (labels_spatial[img_id, :, :]==i)*1. ,cmap='rainbow')
+                #     plt.savefig('img_id_%d_cluster_%d_m1.jpg'%(img_id,i),bbox_inches='tight',pad_inches = -0.1)
+                #     #plt.show()
+
+                #     plt.axis('off') # 去坐标轴
+                #     plt.xticks([]) # 去刻度
+                #     plt.imshow( ~(labels_spatial[img_id, :, :]==i)*1. ,cmap='rainbow')
+                #     plt.savefig('img_id_%d_cluster_%d_m2.jpg'%(img_id,i),bbox_inches='tight',pad_inches = -0.1)
+                #     #plt.show()
+
+            # Apply Directions
+            self.optimizer.zero_grad()
+            z = self.model(z)
+
+            # Forward
+            features = []
+            features_unchange = []
+            orig_features_unchange = []
+            for j in range(z.shape[0] // self.batch_size):
+                # Prepare batch
+                start, end = j * self.batch_size, (j + 1) * self.batch_size
+                z_batch = z[start:end, ...]
+
+                # Manipulate only asked layers
+                if self.feed_layers is not None:
+                    n_latent = self.generator.n_latent()
+
+                    z_batch_layers = []
+                    for i in range(n_latent):
+                        if i in self.feed_layers:
+                            z_batch_layers.append(z_batch)
+                        else:
+                            z_batch_layers.append(z_orig)
+                    z_batch = z_batch_layers
+
+                # Get features
+                feats = self.generator.get_features(z_batch)
+
+                #备份feats_unchange 预测语义分割图, #获得mask
+                if self.use_kmeans:
+                    feats_unchange= feats.clone()
+                    labels_spatial2 = self._kmeans_predict(feats_unchange,self.kmeans_model)
+                    # for img_id in range(1): # features.shape[0]
+                    #   print('img_id_%d'%(img_id))
+                    #   #输出图像
+                    #   # plt.axis('off') # 去坐标轴
+                    #   # plt.xticks([]) # 去刻度
+                    #   # plt.imshow(norm_ip(imgs[img_id, :, :, :], min=-1.0, max=1.0).permute(1, 2, 0).numpy())
+                    #   # plt.savefig('img_id_%d.jpg'%(img_id),bbox_inches='tight',pad_inches = -0.1)
+                    #   # plt.show()
+
+                    #   #输出segmentation, clusters
+                    #   plt.axis('off') # 去坐标轴
+                    #   plt.xticks([]) # 去刻度
+                    #   # plt.colorbar()
+                    #   plt.imshow(labels_spatial2[img_id, :, :],cmap='rainbow') # cmap='rainbow' 'summer', io.show(), 没有colorbar
+                    #   plt.savefig('img_id2_%d.jpg'%(img_id),bbox_inches='tight',pad_inches = -0.1)
+                    #   #plt.show()
+
+                    #   #输出每个cluster
+                    #   for i in range(5):
+                    #     print('img_%d_%d_th_cluster'%(img_id,i))
+                    #     plt.axis('off') # 去坐标轴
+                    #     plt.xticks([]) # 去刻度
+                    #     plt.imshow( (labels_spatial2[img_id, :, :]==i)*1. ,cmap='rainbow')
+                    #     plt.savefig('img_id2_%d_cluster_%d_m1.jpg'%(img_id,i),bbox_inches='tight',pad_inches = -0.1)
+                    #     #plt.show()
+
+                    #     plt.axis('off') # 去坐标轴
+                    #     plt.xticks([]) # 去刻度
+                    #     plt.imshow( ~(labels_spatial2[img_id, :, :]==i)*1. ,cmap='rainbow')
+                    #     plt.savefig('img_id2_%d_cluster_%d_m2.jpg'%(img_id,i),bbox_inches='tight',pad_inches = -0.1)
+                    #     #plt.show()
+
+                #feats = training_utils.feature_reshape_norm(feats)
+
+                # Take feature divergence
+                d_feats = feats - orig_feats
+                print(labels_spatial.shape)
+                print(labels_spatial2.shape)
+                print(feats.shape)
+                print(orig_feats.shape)
+                print(d_feats.shape)
+                feats = feats.detach().cpu().numpy()
+                orig_feats = orig_feats.detach().cpu().numpy()
+                d_feats = d_feats.detach().cpu().numpy()
+                for img_id in range(3): # features.shape[0]
+                  print('img_id_%d'%(img_id))
+                  #输出图像
+                  # plt.axis('off') # 去坐标轴
+                  # plt.xticks([]) # 去刻度
+                  # plt.imshow(norm_ip(imgs[img_id, :, :, :], min=-1.0, max=1.0).permute(1, 2, 0).numpy())
+                  # plt.savefig('img_id_%d.jpg'%(img_id),bbox_inches='tight',pad_inches = -0.1)
+                  # plt.show()
+
+                  #输出segmentation, clusters
+                  plt.axis('off') # 去坐标轴
+                  plt.xticks([]) # 去刻度
+                  # plt.colorbar()
+                  plt.imshow(feats[0,0, :, :],cmap='rainbow') # cmap='rainbow' 'summer', io.show(), 没有colorbar
+                  plt.savefig('feats_%d.jpg'%(img_id),bbox_inches='tight',pad_inches = -0.1)
+                  #plt.show()
+
+                  plt.axis('off') # 去坐标轴
+                  plt.xticks([]) # 去刻度
+                  # plt.colorbar()
+                  plt.imshow(orig_feats[img_id,0, :, :],cmap='rainbow') # cmap='rainbow' 'summer', io.show(), 没有colorbar
+                  plt.savefig('orig_feats_%d.jpg'%(img_id),bbox_inches='tight',pad_inches = -0.1)
+
+                  plt.axis('off') # 去坐标轴
+                  plt.xticks([]) # 去刻度
+                  # plt.colorbar()
+                  plt.imshow(d_feats[img_id,0, :, :],cmap='rainbow') # cmap='rainbow' 'summer', io.show(), 没有colorbar
+                  plt.savefig('d_feats_%d.jpg'%(img_id),bbox_inches='tight',pad_inches = -0.1)
+
+                #   #输出每个cluster
+                #   for i in range(512):
+                #     print('img_%d_%d_th_cluster'%(img_id,i))
+                #     plt.axis('off') # 去坐标轴
+                #     plt.xticks([]) # 去刻度
+                #     plt.imshow( feats[img_id, i, :, :], cmap='rainbow')
+                #     plt.savefig('feats_%d_cluster_%d_m1.jpg'%(img_id,i),bbox_inches='tight',pad_inches = -0.1)
+                #     #plt.show()
+
+                    # plt.axis('off') # 去坐标轴
+                    # plt.xticks([]) # 去刻度
+                    # plt.imshow( ~(feats[img_id, i, :, :]==i)*1. ,cmap='rainbow')
+                    # plt.savefig('feats_%d_cluster_%d_m2.jpg'%(img_id,i),bbox_inches='tight',pad_inches = -0.1)
+                    #plt.show()
+
+                # if self.use_kmeans:
+                #     mask = (labels_spatial2[:, :, :] == self.k_th_cluster) | (labels_spatial[:, :, :] == self.k_th_cluster)
+                #     mask = torch.from_numpy(mask).to(self.device)
+                #     mask = mask.repeat(feats.shape[1],1,1,1).reshape(feats.shape[0],feats.shape[1], feats.shape[2], feats.shape[3]) 
+                #     feats_unchange.masked_fill_(mask, 0)
+                #     orig_feats_unchange.masked_fill_(mask, 0)
+                #     feats.masked_fill_(~mask, 0)
+                #     features_unchange.append(feats_unchange)             #用于计算MSE的特征，对应编辑后特征图在mask以外的区域
+                #     orig_features_unchange.append(orig_feats_unchange)   #用于计算MSE的特征，对应原始特征图在mask以外的区域
+
+                # #feature_reshape_norm
+                # feats = torch.reshape(feats, (feats.shape[0], -1))
+                # feats = feats / torch.reshape(torch.norm(feats, dim=1), (-1, 1))
+                # features.append(feats)  #用于对比学习的特征
+
+            # features = torch.cat(features, dim=0)
+            # if self.use_kmeans:
+            #     features_unchange = torch.cat(features_unchange, dim=0)
+            #     orig_features_unchange = torch.cat(orig_features_unchange, dim=0)
+
+            # # Loss
+            acc, clr_loss = self.loss_fn(features)
+            # if self.use_mse & self.use_kmeans:
+            #     mse_loss = self.mse_loss(features_unchange,orig_features_unchange)
+            #     loss = clr_loss + 10*mse_loss
+            # else:
+            #     loss = clr_loss
+            #     mse_loss = torch.tensor(0)
+            # loss.backward()
+
+            # self.optimizer.step()
+            # self.scheduler.step()
+
+            # Update metrics
+            self.train_acc_metric.update(acc.item(), z.shape[0])
+            self.train_loss_metric.update(loss.item(), z.shape[0])
+
+            # Update progress bar
+            pbar.update()
+            pbar.set_postfix_str(
+                f"Acc: {acc.item():.3f} Loss_CLR: {clr_loss.item():.3f} Loss_MSE: {mse_loss.item():.5f}", refresh=False
+            )
+        pbar.close()
+
+    def _val_loop(self, epoch: int, iterations: int) -> None:
+        """
+        Standard validation loop
+        Args:
+            epoch: current epoch
+            iterations: iterations to run model
+        """
+        # Progress bar
+        pbar = tqdm.tqdm(total=iterations, leave=False)
+        pbar.set_description(f"Epoch {epoch} | Validation")
+
+        # Set to eval
+        self.model.eval()
+        self.generator.eval()
+
+        # Loop
+        for i in range(iterations):
+            with torch.no_grad():
+                # To device
+                z = self.generator.sample_latent(self.batch_size)
+                z = z.to(self.device)
+
+                # Original features
+                orig_feats = self.generator.get_features(z)
+                orig_feats = training_utils.feature_reshape_norm(orig_feats)
+                # Apply Directions
+                z = self.model(z)
+
+                # Forward
+                features = []
+                for j in range(z.shape[0] // self.batch_size):
+                    # Prepare batch
+                    start, end = j * self.batch_size, (j + 1) * self.batch_size
+
+                    # Get features
+                    feats = self.generator.get_features(z[start:end, ...])
+                    feats = training_utils.feature_reshape_norm(feats)
+                    # Take feature divergence
+                    feats = feats - orig_feats
+                    feats = feats / torch.reshape(torch.norm(feats, dim=1), (-1, 1))
+
+                    features.append(feats)
+                features = torch.cat(features, dim=0)
+
+                # Loss
+                acc, loss = self.loss_fn(features)
+                self.val_acc_metric.update(acc.item(), z.shape[0])
+                self.val_loss_metric.update(loss.item(), z.shape[0])
+
+                # Update progress bar
+                pbar.update()
+                pbar.set_postfix_str(
+                    f"Acc: {acc.item():.3f} Loss: {loss.item():.3f}", refresh=False
+                )
+
+        pbar.close()
+
+    def _end_loop(self, epoch: int, epoch_time: float, iteration: int):
+        # Print epoch results
+        self.logger.info(self._epoch_str(epoch, epoch_time))
+
+        # Write to tensorboard
+        if self.writer is not None:
+            self._write_to_tb(epoch)
+
+        # Save model
+        eval_loss = self.val_loss_metric.compute()
+        if self.best_loss == -1 or eval_loss < self.best_loss:
+            self.best_loss = eval_loss
+            self._save_model(os.path.join(self.save_path, "most_recent_epoch%d_best.pt"%epoch), iteration)
+        elif self.save_path is not None:
+            if epoch% 5 == 0:
+                self._save_model(os.path.join(self.save_path, "most_recent_epoch%d.pt"%epoch), iteration)
+        else:
+            print('do not save model')
+            
+        # Clear metrics
+        self.train_loss_metric.reset()
+        self.train_acc_metric.reset()
+        self.val_loss_metric.reset()
+        self.val_acc_metric.reset()
+
+    def _epoch_str(self, epoch: int, epoch_time: float):
+        s = f"Epoch {epoch} "
+        s += f"| Train acc: {self.train_acc_metric.compute():.3f} "
+        s += f"| Train loss: {self.train_loss_metric.compute():.3f} "
+        s += f"| Val acc: {self.val_acc_metric.compute():.3f} "
+        s += f"| Val loss: {self.val_loss_metric.compute():.3f} "
+        s += f"| Epoch time: {epoch_time:.1f}s"
+        return s
+
+    def _write_to_tb(self, iteration):
+        self.writer.add_scalar(
+            "Loss/train", self.train_loss_metric.compute(), iteration
+        )
+        self.writer.add_scalar("Acc/train", self.train_acc_metric.compute(), iteration)
+        self.writer.add_scalar("Loss/val", self.val_loss_metric.compute(), iteration)
+        self.writer.add_scalar("Acc/val", self.val_acc_metric.compute(), iteration)
+
+    def _save_model(self, path, iteration):
+        obj = {
+            "iteration": iteration + 1,
+            "optimizer": self.optimizer.state_dict(),
+            "model": self.model.state_dict(),
+            "scheduler": self.scheduler.state_dict()
+            if self.scheduler is not None
+            else None,}
+        torch.save(obj, os.path.join(self.save_path, path))
+
+    def _load_from_checkpoint(self, checkpoint_path: str) -> None:
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
+        self.model.load_state_dict(checkpoint["model"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+
+        self.start_iteration = checkpoint["iteration"]
+
+        if self.scheduler:
+            self.scheduler.load_state_dict(checkpoint["scheduler"])
+
+        if self.start_iteration > self.iterations:
+            raise ValueError("Starting iteration is larger than total iterations")
+
+        self.logger.info(f"Checkpoint loaded, resuming from iteration {self.start_iteration}")
+
+@hydra.main(config_path="utils", config_name="conf")
+def train(cfg: DictConfig):
+    # Init model
+    model_save_path = os.getcwd()
+    log_utils.display_config(cfg)
+    model: torch.nn.Module = instantiate(cfg.model, k=cfg.k).to(device)
+    loss_fn: torch.nn.Module = instantiate(cfg.loss, k=cfg.k).to(device)
+    generator: torch.nn.Module = instantiate(cfg.generator, device = device, checkpoint_path = hydra.utils.to_absolute_path(cfg.generator_path))
+    optimizer: torch.optim.Optimizer = instantiate(
+        cfg.optimizer,
+        model.parameters(),
+    )
+    scheduler = instantiate(cfg.scheduler, optimizer)
+
+    # Tensorboard
+    if cfg.tensorboard:
+        # Note: global step is in epochs here
+        writer = SummaryWriter(os.getcwd())
+        # Indicate to TensorBoard that the text is pre-formatted
+        text = f"<pre>{OmegaConf.to_yaml(cfg)}</pre>"
+        writer.add_text("config", text)
+    else:
+        writer = None
+
+    trainer = Trainer(
+        model=model,
+        loss_fn=loss_fn,
+        optimizer=optimizer,
+        generator=generator,
+        batch_size=cfg.batch_size,
+        iterations=cfg.iterations,
+        device=device,
+        eval_freq=cfg.eval_freq,
+        eval_iters=cfg.eval_iters,
+        scheduler=scheduler,
+        grad_clip_max_norm=cfg.grad_clip_max_norm,
+        writer=writer,
+        save_path=model_save_path,
+        checkpoint_path=cfg.model_load_path,
+        feed_layers=cfg.feed_layers,
+        use_kmeans = cfg.kmeans.use_kmeans,
+        k_th_cluster = cfg.kmeans.k_th_cluster,
+        kmeans_model_path=hydra.utils.to_absolute_path(cfg.kmeans.kmeans_model_path),
+        use_mse =  cfg.kmeans.use_mse_loss
+    )     # Trainer init
+
+    trainer.train() # Launch training process
+
+if __name__ == "__main__":
+    use_gpu = torch.cuda.is_available()
+    device = torch.device("cuda" if use_gpu else "cpu")
+    print('#######################')
+    train()
+
+

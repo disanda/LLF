@@ -1,0 +1,280 @@
+# L4-L5 1.鼻子 2.嘴巴
+
+#4x4 30k_2th_clusters_5_feature_size-4_layer-15
+#- 11 # color lips(a few)
+#- 12 # color details: lips, face
+#- 13    # light, all img color
+#- 14  # face color
+#- 15  # hair color
+#- 17 # background 
+#- 16:17: # background with large scale
+
+
+#k30_8x8-Kmeans3_convs1
+# 0 下半 1 背景 2 上半
+
+#0 k30_8x8-Kmeans0_3_convs1 下半
+## l2 eyeglasses 少年
+
+#2 k30_8x8-Kmeans2_3_convs1 背景
+## l2, 发型变化
+
+#2 k30_8x8-Kmeans2_3_convs1 上半
+# layer2 [eyeglasses: k5, k12] [hair-drop2eye: k2, k16, k23, k27]
+
+# 8x8 clusters_5_feature_size_8_samples_1024
+# 0 Mouth_blow, 1 hair, 2 background ,3 nose+mouch ,4 eyes-center
+
+#8x8 k20_0_clusters_5_feature_size_8_samples_1024_convs.1_epoch5_best
+# 0-4, face shape
+#- 4 smlie
+#- 6,  beard, wrinkle [only man]
+#- 7 # hair&eye [only man]
+# 8 # color-light: [hair, face, background]
+# 9 pupil
+# 16, weak color&light for [face, background]
+
+#8x8 k20_1_clusters_5_feature_size_8_samples_1024_convs1_epoch7_layer-0-9
+# -0:9 hair style 
+#  - 2 # eyeglasses, pose, face-shape, hair
+
+#8x8 k20_2_clusters_5_feature_size_8_samples_1024_convs1_epoch7_layer-0-9
+# Face Hair Lips : [size , shape]
+# 0-4 or 0-3 Face Hair Lips : [size , shape] better
+# 6 expression [sad, anger]   beard,wrinkle,old-young: [only man]
+
+#8x8 20k_3_clusters_5_feature_size_8_samples_1024_convs.1.ep4
+# 1 head-zoom, pose(good k=18)
+# 2 eyeglasses(k=8), pose, face-shape
+# 3 pose(k18)
+# 4 mouth(related-expression or hair-man)
+# 12 face color
+
+#8x8 20k_4_clusters_5_feature_size_8_samples_1024_convs1_epoch4
+# 2 hair [k17, more or less], pose [up or down]
+# 3 hair [k17, more or less]
+# 4 mouth(related-expression or hair-man)
+# 5 expression [feeling, mood]
+# 6 old/young
+# 7 pupil, eye [open 2 close]
+# 8 color [hair background]
+# 10, light [face] lips [red]
+# 13 color [face clothes (weak)]
+# 15, color [face hair (a little)]
+
+# 8x8 
+
+16x16  c5
+# 0 脸中 1 头套 2 背景 3 脸下 4 脸上
+
+# k30_16x16-Kmeans0_5_convs3_epoch7_best.pt 脸中
+
+# k30_16x16-Kmeans1_5_convs3_epoch7_best.pt 头套
+## layer 1 [0,300] 脸拉长
+## layer 0:8 嘟嘴 
+
+# k30_16x16-Kmeans3_5_convs3_epoch7_best.pt 脸下
+# layer 0:8 嘟嘴
+
+
+# 30k_16x16_convs3/most_recent_epoch12_best.pt
+# layer=0-9:
+  # brow down2up k0 
+  # happy2sad k12 k22 k23
+  # sex k26
+# layer 4:5
+  # mounth expression
+
+32x32
+#32x32 20k_clusters_5_feature_size_32_convs5_samples256
+# 0 头发, 1 眼睛,  2 背景, 3 面部, 4 嘴巴
+
+#k20_32x32-Kmeans0_5_convs5_epoch7_best 头发
+# 0 hair 200 - 360 头发
+# 4 脸型 表情 嘴巴
+# 6 头发相关 胡子 性别
+
+#k20_32x32-Kmeans2_5_convs5_epoch8_best 背景
+
+#k20_32x32-Kmeans3_5_convs5_epoch8_best 面部
+
+
+#k20_32x32-Kmeans4_5_convs5_epoch7_best 嘴巴
+# 6 makeup k2  disappear face k19
+
+# 64x64_convs7_20k_kmeans_eye_amse/most_recent_epoch5_best.pt
+# eye left2right k10 layer = 6
+# eye open2close k20 ayer = 6
+
+# makeup: [0-7]
+
+
+
+{"0107_m4_32_eyes_10clusters_k30_b4_0to9layers":{
+    "MODEL_DIR": "/home/sbaima/cc/latentclr/outputs/run/train/colat.generators.StyleGAN2Generator/convs.5_ffhq_30/colat.models.NonlinearConditional_colat.projectors.IdentityProjector/area_3/2022-01-07/",
+    "semantic":{
+        "eyes right to left":{
+            "DIRECTIONS": 17,
+            "LAYER_MAPS":[6],
+            "alphas":[-15, -13, -11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9, 11, 13, 15]
+        },
+        "eyebrow up and down":{
+            "DIRECTIONS": 14,
+            "LAYER_MAPS":[6],
+            "alphas":[-15, -13, -11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9, 11, 13, 15]
+        },
+        "eyes close":{
+            "DIRECTIONS": 15,
+            "LAYER_MAPS":[6],
+            "alphas":[-25, -22, -19, -16, -13, -10, -7, -4, -1, 2, 5, 8, 11, 14, 17, 20, 23]
+        },
+        "smile1 + hair lengthening":{
+            "DIRECTIONS": 29,
+            "LAYER_MAPS":[4],
+            "alphas":[-25, -22, -19, -16, -13, -10, -7, -4, -1, 2, 5, 8, 11, 14, 17, 20, 23]
+        },
+        "smile2 + hair lengthening":{
+            "DIRECTIONS": 23,
+            "LAYER_MAPS":[4],
+            "alphas":[-25, -22, -19, -16, -13, -10, -7, -4, -1, 2, 5, 8, 11, 14, 17, 20, 23]
+        },
+        "heavy makeup":{
+            "DIRECTIONS": 10,
+            "LAYER_MAPS":[0,1,2,3,4,5,6,7],
+            "alphas":[-15, -13, -11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9, 11, 13, 15]
+        },
+        "Eye upper right to lower left":{
+            "DIRECTIONS": 25,
+            "LAYER_MAPS":[6],
+            "alphas":[-20, -18, -16, -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14]
+        }
+    }
+},
+"0215_m4_32_mouth_10clusters_k30_b4_0to6layers":{
+    "MODEL_DIR": "/home/sbaima/cc/latentclr/outputs/run/train/colat.generators.StyleGAN2Generator/convs.5_ffhq_30/colat.models.NonlinearConditional_colat.projectors.IdentityProjector/area_9/2022-02-15/",
+    "semantic":{
+        "look up":{
+            "DIRECTIONS": 1,
+            "LAYER_MAPS":[0,1,2,3,4,5,6,7],
+            "alphas":[-20, -16, -12, -8, -4, 0, 4, 8, 12, 16, 20]
+        },
+        "open mouth + hair changing":{
+            "DIRECTIONS": 25,
+            "LAYER_MAPS":[4],
+            "alphas":[-8, -6, -4, -2, 0, 2, 4, 6, 8, 10]
+        },
+        "nose up and down":{
+            "DIRECTIONS": 23,
+            "LAYER_MAPS":[6],
+            "alphas":[-25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25]
+        }
+    }
+},
+"0218_m4_32_neck_7clusters_k30_b4_all_layers":{
+    "MODEL_DIR": "/home/sbaima/cc/latentclr/outputs/run/train/colat.generators.StyleGAN2Generator/convs.5_ffhq_30/colat.models.NonlinearConditional_colat.projectors.IdentityProjector/area_0/2022-02-18/",
+    "semantic":{
+        "smile + hair changing":{
+            "DIRECTIONS": 26,
+            "LAYER_MAPS":[0,1,2,3,4,5,6,7],
+            "alphas":[-7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7]
+        },
+        "facial expression1":{
+            "DIRECTIONS": 4,
+            "LAYER_MAPS":[4,5],
+            "alphas":[-20, -16, -12, -8, -4, 0, 4, 8, 12, 16, 20]
+        },
+        "facial expression2":{
+            "DIRECTIONS": 25,
+            "LAYER_MAPS":[0,1,2,3,4,5,6,7],
+            "alphas":[-20, -16, -12, -8, -4, 0, 4, 8, 12, 16, 20]
+        },
+        "Fat and thin":{
+            "DIRECTIONS": 20,
+            "LAYER_MAPS":[4,5,6],
+            "alphas":[-20, -16, -12, -8, -4, 0, 4, 8, 12, 16, 20]
+        }
+    }
+},
+"0302_m4_64_eyes_15clusters_k16_b4_8to9_layers":{
+    "MODEL_DIR": "/home/sbaima/cc/latentclr/outputs/run/train/colat.generators.StyleGAN2Generator/convs.7_ffhq_16/colat.models.NonlinearConditional_colat.projectors.IdentityProjector/area_5/2022-03-02/",
+    "semantic":{
+        "iris color + light":{
+            "DIRECTIONS": 0,
+            "LAYER_MAPS":[8],
+            "alphas":[-25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25]
+        }
+    }
+},
+"0304_m4_64_hair_7clusters_k16_b4_1to9_layers":{
+    "MODEL_DIR": "/home/sbaima/cc/latentclr/outputs/run/train/colat.generators.StyleGAN2Generator/convs.7_ffhq_16/colat.models.NonlinearConditional_colat.projectors.IdentityProjector/area_5/2022-03-03/",
+    "semantic":{
+        "eyes closed":{
+            "DIRECTIONS": 12,
+            "LAYER_MAPS":[6,7],
+            "alphas":[-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6]
+        },
+        "Bigger eyes + lighter eyebrows":{
+            "DIRECTIONS": 12,
+            "LAYER_MAPS":[8],
+            "alphas":[-15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15]
+        },
+        "hair color":{
+            "DIRECTIONS": 15,
+            "LAYER_MAPS":[8],
+            "alphas":[-5.5,-5,-4.5,4,-3.5,-3,-2.5,-2,-1,-0.5,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5]
+        },
+        "Race: white to black":{
+            "DIRECTIONS": 4,
+            "LAYER_MAPS":[8,9],
+            "alphas":[-13, -11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9, 11, 13]
+        },
+        "Bokeh beyond the face":{
+            "DIRECTIONS": 7,
+            "LAYER_MAPS":[8],
+            "alphas":[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+        }
+    }
+}
+}
+
+官方100k
+
+- smile, k:28 layer:4 (3之前会改变脸部大小，取消眼镜)
+- 50000 4_batch_size
+
+64x64 cluster 4 with MSE
+
+- 眼睛转动
+- 闭眼
+- 嘴唇
+
+
+# baseline_100 # 第 k 个值，第 n 层
+# {
+#     "MODEL_DIR": "./models/stylegan2/ffhq",
+#     "DIRECTIONS": {
+#         "hair_color": [2,2], 
+#         "hl_face": [4,5],
+#         "rotation": [9,0],
+#         "grin": [26,4],
+#         "hairstyle": [32,1],
+#         "bald": [48,1],
+#         "happy2serious": [62,4],
+#         "old": [14,2],
+#         "smile": [28,4],
+#         "lipstick": [28,5]
+#     },
+#     "LAYER_MAPS": {
+#         "0": [0,1],
+#         "1": [2,3,4,5],
+#         "2": [6,7,8,9,10,11,12,13],
+#         "3": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18], 
+#         "4": [4,5],
+#         "5": [10,11],
+#         "6": [6,7,8,9],
+#         "7": [3,4,5,6,7],
+#         "8": [8,9,10,11,12,13,14,15,16,17,18],
+#         "9": [6,7,8]
+#     }
+# }
+
