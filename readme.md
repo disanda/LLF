@@ -1,6 +1,8 @@
-# titile
+# LLF
 
 ## pre-trained model
+
+Download pre-trained model (StyleGAN2) first
 
 - https://github.com/rosinality/stylegan2-pytorch
 
@@ -8,17 +10,17 @@
 
 ## kmeans.py
 
->segmentation (local features)
+segmentation (local features)
 
-segmentation cluster
+segmentation clusters within 3, 5, 7
 
-truncation_alpha = 0.5 
+truncation_alpha = 0.5 ((better) )
 
 <!-- #系数降低图像生成效果变差，但增加了样本多样性，保证分割效果 -->
 
 ## train.py
 
->learning layer wise & local features for direction model
+learning layer wise & local features via direction model
 
 - config file
 ./utils/conf.yaml
@@ -27,9 +29,11 @@ truncation_alpha = 0.5
 ./kmeans/16x16/kmeans_k_clusters_3_feature_size_16_samples_256_feature_layer_convs.3.pkl
 
 
+truncation_alpha = 0.7 or 0.85 (better) 
+
 ## visual.py
 
-> visualization of results
+result visualization 
 
 <!-- 可视化 -->
 
@@ -109,7 +113,3 @@ scipy==1.5.0
     3.完善车，多了一个类，每一层去看，效果更好，注意trunc 0.7 or 0.85
       - 只做了两个类，新增一个类没做
       - 再做一个类 2023/3/28
-
-文章修改
-    1.图1加两个输入和输出
-    2.删除MSE部分 -->
