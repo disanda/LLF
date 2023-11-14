@@ -1,7 +1,7 @@
 k: 100
-model_name: stylegan2_ffhq_directions_k100_depth1
+model_name: stylegan2_ffhq_results
 generator_path: ./checkpoint/generators/stylegan2-ffhq-config-f.pt
-model_path: ./outputs/4x4/stylegan2_ffhq_directions_k100_depth1/model.pt
+model_path: ./outputs/2022-03-23/02-57-37/k30_32x32-Kmeans0_5_convs5_epoch8_best.pt
 n_samples: 1 # 30 #./checkpoint/latent_code.npy  #id5_norm376.pt  #id2_norm375.pt #./checkpoint/latent_code.npy #./checkpoint/real_img/id10-i0-w1900-norm373.856293-imgLoss1.587639.pt 
 save_single_imgs: true
 sample_random: false

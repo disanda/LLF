@@ -1,0 +1,61 @@
+[2022-03-23 02:57:38,028][root][INFO] - Configuration:
+
+[2022-03-23 02:57:38,033][root][INFO] - k: 30
+model_name: k30_32x32-Kmeans0_5_convs5
+batch_size: 5
+iterations: 12000
+grad_clip_max_norm: null
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.001
+  weight_decay: 0.001
+scheduler:
+  _target_: torch.optim.lr_scheduler.MultiStepLR
+  milestones:
+  - 1000
+  - 5000
+  gamma: 0.2
+generator_path: ./checkpoint/generators/stylegan2-ffhq-config-f.pt
+tensorboard: true
+eval_freq: 1200
+eval_iters: 100
+feed_layers: null
+model_load_path: null
+kmeans:
+  use_kmeans: true
+  kmeans_model_path: ./checkpoint/kmeans/32x32/kmeans_k_clusters_5_feature_size_32_samples_256_feature_layer_convs.5.pkl
+  k_th_cluster: 0
+  use_mse_loss: true
+generator:
+  _target_: models.generators.stylegan2.stylegan2_wrap.StyleGAN2Generator
+  truncation: 0.85
+  class_name: ffhq
+  use_w: true
+  feature_layer: convs.5
+model:
+  size: 512
+  _target_: model.NonlinearConditional
+  normalize: true
+  alpha: 0.1
+  depth: 3
+  final_ac: false
+loss:
+  _target_: loss.ContrastiveLoss
+  temp: 0.5
+  abs: true
+  reduce: mean
+
+[2022-03-23 02:57:38,033][root][INFO] - ========================================
+
+[2022-03-23 02:57:43,128][root][INFO] - Beginning training
+[2022-03-23 03:30:13,479][root][INFO] - Epoch 0 | Train acc: 0.904 | Train loss: 0.007 | Val acc: 0.996 | Val loss: -0.152 | Epoch time: 1950.4s
+[2022-03-23 04:02:55,703][root][INFO] - Epoch 1 | Train acc: 0.956 | Train loss: -0.039 | Val acc: 0.994 | Val loss: -0.158 | Epoch time: 1961.6s
+[2022-03-23 04:35:31,500][root][INFO] - Epoch 2 | Train acc: 0.961 | Train loss: -0.045 | Val acc: 0.997 | Val loss: -0.168 | Epoch time: 1955.1s
+[2022-03-23 05:07:57,269][root][INFO] - Epoch 3 | Train acc: 0.975 | Train loss: -0.064 | Val acc: 0.996 | Val loss: -0.183 | Epoch time: 1945.1s
+[2022-03-23 05:40:25,226][root][INFO] - Epoch 4 | Train acc: 0.982 | Train loss: -0.086 | Val acc: 0.998 | Val loss: -0.188 | Epoch time: 1947.3s
+[2022-03-23 06:12:50,574][root][INFO] - Epoch 5 | Train acc: 0.985 | Train loss: -0.088 | Val acc: 0.997 | Val loss: -0.192 | Epoch time: 1944.7s
+[2022-03-23 06:45:22,046][root][INFO] - Epoch 6 | Train acc: 0.986 | Train loss: -0.089 | Val acc: 0.997 | Val loss: -0.189 | Epoch time: 1950.8s
+[2022-03-23 07:17:48,912][root][INFO] - Epoch 7 | Train acc: 0.987 | Train loss: -0.091 | Val acc: 0.997 | Val loss: -0.188 | Epoch time: 1946.9s
+[2022-03-23 07:50:36,525][root][INFO] - Epoch 8 | Train acc: 0.987 | Train loss: -0.092 | Val acc: 0.998 | Val loss: -0.197 | Epoch time: 1967.6s
+[2022-03-23 08:23:24,212][root][INFO] - Epoch 9 | Train acc: 0.988 | Train loss: -0.092 | Val acc: 0.997 | Val loss: -0.194 | Epoch time: 1967.1s
+[2022-03-23 08:23:24,213][root][INFO] - Finished training! Total time: 5.43h

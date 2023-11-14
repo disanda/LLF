@@ -25,7 +25,7 @@ import utils.training_utils as training_utils
 
 # load and print config
 save_imgs = True 
-conf_path =  './utils/visual_config_ffhq.yaml'
+conf_path =  './utils/visual_config_car.yaml'
 cfg = yaml.load(open(conf_path), Loader=yaml.FullLoader)
 cfg = OmegaConf.create(cfg)
 dirs = cfg.n_dirs

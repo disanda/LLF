@@ -1,47 +1,50 @@
 # LLF
 
-## pre-trained model
+## Pre-trained model
 
-Download pre-trained model (StyleGAN2) first
+Download StyleGAN2 model first
 
-- https://github.com/rosinality/stylegan2-pytorch
+- case of StyleGAN-FFHQ-F 
 
-- ./models/generators/stylegan2/stylegan2_pytorch/checkpoint/tf
+1. Download "stylegan2-ffhq-config-f.pt" here:
 
-## kmeans.py
+https://drive.google.com/file/d/1QyDC3btIP4DUfiSmAkdJWSbKJsU60-Pv/view?usp=sharing
 
-segmentation (local features)
+2. Put in "./checkpoint/generators/stylegan2-ffhq-config-f.pt"
 
-segmentation clusters within 3, 5, 7
-
-truncation_alpha = 0.5 ((better) )
-
-<!-- #系数降低图像生成效果变差，但增加了样本多样性，保证分割效果 -->
-
-## train.py
-
-learning layer wise & local features via direction model
-
-- config file
-./utils/conf.yaml
-
-- segmentation file
-./kmeans/16x16/kmeans_k_clusters_3_feature_size_16_samples_256_feature_layer_convs.3.pkl
+3. see details on: https://github.com/rosinality/stylegan2-pytorch
 
 
-truncation_alpha = 0.7 or 0.85 (better) 
+- Download direction model (16x16 features with 5 clusters)
 
-## visual.py
+1. Download "most_recent_epoch6_best.pt" here: 
 
-result visualization 
+https://drive.google.com/file/d/1tI72PrrZTFf-GsjMF1UgGGVnKADNdLqa/view?usp=sharing
+
+2. Put in "./outputs/2022-03-23/02-57-37/most_recent_epoch6_best.pt"
+
+3. see train.log for details
+
+
+## Visualization (visual.py)
+
+> Running "visual.py" to get our result  
 
 <!-- 可视化 -->
 
-- config file
+Please see two Configure carefully:
 
-./utils/visual_config_ffhq.yaml
+- visual_config_ffhq.yaml
 
-truncation_alpha = 0.85 
+1. On here: "./utils/visual_config_ffhq.yaml"
+
+2. generator_path: "./checkpoint/generators/stylegan2-ffhq-config-f.pt"
+
+3. model_path: "./outputs/2022-03-23/02-57-37/most_recent_epoch6_best.pt"
+
+as case of k30_32x32-convs5-Kmeans-5clusters
+
+4. truncation_alpha = 0.85 
 
 
 <!-- n_samples #样本个数 或 潜码文件 ./RFM_latentCLR/id1-i0-w600-norm301.878265-imgLoss2.196582.pt # 30 #./checkpoint/latent_code.npy  #id5_norm376.pt  #id2_norm375.pt #./checkpoint/latent_code.npy #./checkpoint/real_img/id10-i0-w1900-norm373.856293-imgLoss1.587639.pt
@@ -55,7 +58,36 @@ truncation_alpha = 0.85
 层数越少，方向值需越大 -->
 
 
-## pip list 
+## Local features( kmeans.py)
+
+segmentation clusters within 3, 5, 7
+
+truncation_alpha = 0.5 (better)
+
+<!-- #系数降低图像生成效果变差，但增加了样本多样性，保证分割效果 -->
+
+- Case
+
+"k-means-128x128" file: A case of convs.8 on StyleGAN2-FFHQ
+
+## Training direction model (Train.py)
+ 
+learning layer wise & local features via direction model
+
+- config file
+./utils/conf.yaml
+
+- segmentation file
+
+./kmeans/16x16/kmeans_k_clusters_3_feature_size_16_samples_256_feature_layer_convs.3.pkl
+
+truncation_alpha = 0.7 or 0.85 (better) 
+
+- output file
+
+./output
+
+## Pip list 
 
 ```py
 3090 / CUDA Version: 11.7 / windows 10 64:
@@ -90,7 +122,7 @@ scikit-learn==0.23.1
 scipy==1.5.0
 ```
 
-## baseline & previous works
+## Baseline & Previous works
 
 - https://github.com/catlab-team/latentclr
 - https://github.com/warmspringwinds/segmentation_in_style
