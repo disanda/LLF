@@ -136,7 +136,7 @@ class NonlinearConditional(Model):
             )
         ) # [-1, latent_size] -> [k, -1, latent_size] 
 
-        #  calculate directions
+        #calculate directions
         dz = []
         for i in range(self.k):
             res_dz = self.nets[i](z[i, ...])

@@ -4,7 +4,6 @@ import torch.nn as nn
 
 class ContrastiveLoss(nn.Module):
     """Computes the contrastive loss
-
     Args:
         - k: the number of transformations per batch
         - temperature: temp to scale before exponential

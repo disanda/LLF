@@ -119,8 +119,7 @@ class Trainer:
         """
         
         feats_new = feats.permute(0, 2, 3, 1).reshape(-1, feats.shape[1])
-        arr = feats_new.detach().cpu().numpy()
-        #检查NAN、无穷大
+        arr = feats_new.detach().cpu().numpy() #检查NAN、无穷大
         arr[np.isnan(arr)]=0
         arr[np.isinf(arr)]=0
         labels = kmeans_model.predict(arr)

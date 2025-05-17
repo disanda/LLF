@@ -130,7 +130,6 @@ for img_id in range(2): # features.shape[0]
     # plt.savefig('img_id_%d_cluster_%d_m2.png'%(img_id,i),bbox_inches='tight',pad_inches = -0.1)
     # plt.show()
 
-
 #    io.imsave('./img_%d_%d_th_cluster.jpg'%(img_id,i), labels_spatial[img_id, :, :], cmap='rainbow')
     # io.imsave('./img_%d_%d_th_cluster_m1.jpg'%(img_id,i),  (labels_spatial[img_id, :, :]==i)*1. ,cmap='rainbow')
     # io.imsave('./img_%d_%d_th_cluster_m2.jpg'%(img_id,i), ~(labels_spatial[img_id, :, :]==i)*1. ,cmap='rainbow')

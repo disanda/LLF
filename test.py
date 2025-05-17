@@ -48,6 +48,7 @@ f4 = f2 - f1
 f5 = f3 - f1
 
 #torchvision.utils.save_image(x3*0.5+0.5,'./face_10.jpg',nrow=10)
+
 flag = 0 
 for  a,b,c,d,e in zip(f1, f2, f3, f4, f5):
     torchvision.utils.save_image(a,'./f1_%d_convs9_64x64.png'%flag,nrow=1)

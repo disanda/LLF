@@ -6,6 +6,8 @@
 
 Official implementation and pre-trained models for "Towards Interpretable Face Morphing via Unsupervised Learning of Layer-wise and Local Features"
 
+[results]('./output.mp4')
+
 
 ## 1. Pre-trained model
 
@@ -65,7 +67,7 @@ as case of k30_32x32-convs5-Kmeans-5clusters
 层数越少，方向值需越大 -->
 
 
-## Local features( kmeans.py)
+## 3. Local features( kmeans.py)
 
 segmentation clusters within 3, 5, 7
 
@@ -77,7 +79,7 @@ truncation_alpha = 0.5 (better)
 
 "k-means-128x128" file: A case of convs.8 on StyleGAN2-FFHQ
 
-## Training direction model (Train.py)
+## 4. Training direction model (Train.py)
 
 learning layer wise & local features via direction model
 
@@ -94,7 +96,7 @@ truncation_alpha = 0.7 or 0.85 (better)
 
 ./output
 
-## Pip list 
+## 5. Pip list 
 
 ```py
 3090 / CUDA Version: 11.7 / windows 10 64:
@@ -129,7 +131,7 @@ scikit-learn==0.23.1
 scipy==1.5.0
 ```
 
-## Reference
+## 6. Reference
 
 - https://github.com/catlab-team/latentclr
 - https://github.com/warmspringwinds/segmentation_in_style
