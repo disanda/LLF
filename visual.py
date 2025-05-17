@@ -270,7 +270,7 @@ class Visualizer:
                 )
                 d = ImageDraw.Draw(img_k)
 
-                #  draw direction text
+                #draw direction text
                 for ind in range(len(self.dirs)):
                     d.multiline_text(
                         (10, 100 + ind * (images.size(-1) + 2)),

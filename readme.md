@@ -1,8 +1,15 @@
-# LLF
 
-## Pre-trained model
 
-Download StyleGAN2 model first
+
+
+# LLF (Learning of Layer-wise and Local Features)
+
+Official implementation and pre-trained models for "Towards Interpretable Face Morphing via Unsupervised Learning of Layer-wise and Local Features"
+
+
+## 1. Pre-trained model
+
+### 1.1 Download StyleGAN2 model first
 
 - case of StyleGAN-FFHQ-F 
 
@@ -10,23 +17,23 @@ Download StyleGAN2 model first
 
 https://drive.google.com/file/d/1QyDC3btIP4DUfiSmAkdJWSbKJsU60-Pv/view?usp=sharing
 
-2. Put in "./checkpoint/generators/stylegan2-ffhq-config-f.pt"
+2. Put the model to here: "./checkpoint/generators/stylegan2-ffhq-config-f.pt"
 
 3. see details on: https://github.com/rosinality/stylegan2-pytorch
 
 
-- Download direction model (16x16 features with 5 clusters)
+### 1.2 Download Direction Model (as case of 16x16 features with 5 clusters)
 
 1. Download "most_recent_epoch6_best.pt" here: 
 
 https://drive.google.com/file/d/1tI72PrrZTFf-GsjMF1UgGGVnKADNdLqa/view?usp=sharing
 
-2. Put in "./outputs/2022-03-23/02-57-37/most_recent_epoch6_best.pt"
+2. Put in "./outputs/most_recent_epoch6_best.pt"
 
 3. see train.log for details
 
 
-## Visualization (visual.py)
+## 2.Visualization (visual.py)
 
 > Running "visual.py" to get our result  
 
@@ -71,7 +78,7 @@ truncation_alpha = 0.5 (better)
 "k-means-128x128" file: A case of convs.8 on StyleGAN2-FFHQ
 
 ## Training direction model (Train.py)
- 
+
 learning layer wise & local features via direction model
 
 - config file
@@ -122,7 +129,7 @@ scikit-learn==0.23.1
 scipy==1.5.0
 ```
 
-## Baseline & Previous works
+## Reference
 
 - https://github.com/catlab-team/latentclr
 - https://github.com/warmspringwinds/segmentation_in_style
@@ -135,13 +142,13 @@ scipy==1.5.0
 
     2.church
       - 再做一个类 2023/3/28（已完成）
-
+    
     2.添加猫
       - cat_c0-5_k30_cf16_if32 1,6,18,27,29
       - cat_c1-5_k30_cf16_if32 
          layer2: 0-2,9,20, 13-23,29
       - 暂时完成
-
+    
     3.完善车，多了一个类，每一层去看，效果更好，注意trunc 0.7 or 0.85
       - 只做了两个类，新增一个类没做
       - 再做一个类 2023/3/28

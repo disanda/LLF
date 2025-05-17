@@ -107,18 +107,13 @@ class Trainer:
             self.mse_loss = torch.nn.MSELoss()
 
     def _kmeans_predict(self,feats,kmeans_model):
-        
-        """
-        kmeans预测特征图类别的函数，输出语义分割图。
-
+        """ kmeans预测特征图类别的函数，输出语义分割图。
         Args:
             feats: 从GAN中提取的特征图。
-            kmeans_model: 加载的kmeans模型，用于对feats_formask分割。
-        """
+            kmeans_model: 加载的kmeans模型，用于对feats_formask分割。"""
         
         feats_new = feats.permute(0, 2, 3, 1).reshape(-1, feats.shape[1])
-        arr = feats_new.detach().cpu().numpy()
-        #检查NAN、无穷大
+        arr = feats_new.detach().cpu().numpy() #检查NAN、无穷大
         arr[np.isnan(arr)]=0
         arr[np.isinf(arr)]=0
         labels = kmeans_model.predict(arr)
@@ -157,13 +152,10 @@ class Trainer:
         )
 
     def _train_loop(self, epoch: int, iterations: int) -> None:
-        """
-        Regular train loop
-
+        """ Regular train loop
         Args:
             epoch: current epoch
-            iterations: iterations to run model
-        """
+            iterations: iterations to run model"""
         # Progress bar
         pbar = tqdm.tqdm(total=iterations, leave=False)
         pbar.set_description(f"Epoch {epoch} | Train")
@@ -274,12 +266,10 @@ class Trainer:
         pbar.close()
 
     def _val_loop(self, epoch: int, iterations: int) -> None:
-        """
-        Standard validation loop
+        """Standard validation loop
         Args:
             epoch: current epoch
-            iterations: iterations to run model
-        """
+            iterations: iterations to run model"""
         # Progress bar
         pbar = tqdm.tqdm(total=iterations, leave=False)
         pbar.set_description(f"Epoch {epoch} | Validation")
