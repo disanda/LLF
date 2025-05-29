@@ -4,7 +4,9 @@
 Official implementation and pre-trained models for "Towards Interpretable Face Morphing via Unsupervised Learning of Layer-wise and Local Features"
 
 ## Visualization 
-[![]](./supplementary/253733958-c97629a0-5928-476b-99f2-79d5f92762e7.mp4)
+<div align="center">
+    <img src="./supplementary/Animation_demo_fps7_sclae025.gif", width="600">
+</div>
 
 ## 1. Pre-trained model
 
