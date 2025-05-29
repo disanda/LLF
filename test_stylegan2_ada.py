@@ -6,6 +6,7 @@ import torchvision
 from models.generators import stylegan2_ada_networks
 
 seed = 31
+n_images = 1
 np.random.seed(seed)
 
 if torch.cuda.is_available():    
@@ -23,8 +24,8 @@ G = legacy.load_model(model_path, device)
 z = torch.randn([1, G.z_dim])#.cuda()    # latent codes
 c = None  # class labels (not used in this example)
 
-z1 = torch.from_numpy(np.random.RandomState(int(seed)).randn(1, G.z_dim)).to(device)
-label = torch.zeros([1, G.c_dim], device=device)
+z1 = torch.from_numpy(np.random.RandomState(int(seed)).randn(n_images, G.z_dim)).to(device)
+label = torch.zeros([n_images, G.c_dim], device=device)
 
 #w = G.mapping(z, c, truncation_psi=0.7) # truncation_cutoff=8
 w = G.get_ws(z1,label,truncation_psi=0.7)

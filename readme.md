@@ -196,6 +196,8 @@ scikit-image==0.15.0
 scikit-learn==1.0.2
 scipy==1.7.3
 setuptools==59.5.0
+Ninja
+iopath
 
 
 Previous:

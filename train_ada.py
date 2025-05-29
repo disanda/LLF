@@ -39,7 +39,6 @@ class Trainer:
         model: torch.nn.Module,
         loss_fn: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
-        generator: Generator,
         batch_size: int,
         iterations: int,
         device: torch.device,
@@ -55,7 +54,8 @@ class Trainer:
         k_th_cluster: int = 5,
         kmeans_model_path:str = "",
         use_mse =  False,
-        g_path = None
+        g_path = None,
+        truncation = 0.7
     ) -> None:
 
         # Logging / Saving  / Device
@@ -70,7 +70,6 @@ class Trainer:
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.generator = legacy.load_model(g_path, device)
-        self.feed_layers = feed_layers
 
         #Eval
         self.eval_freq = eval_freq
@@ -96,6 +95,7 @@ class Trainer:
         self.best_loss = -1
 
         self.feature_size = feature_size
+        self.truncation = truncation
 
         # Segmentation
         self.use_kmeans = use_kmeans
@@ -172,7 +172,7 @@ class Trainer:
 
         for i in range(iterations):
             # To device
-            z = self.generator.sample_latent(self.batch_size)
+            z = self.generator.sample_latent(self.batch_size, self.device, truncation = self.truncation)
             z = z.to(self.device)
             z_orig = z
 
@@ -214,6 +214,8 @@ class Trainer:
                 #     z_batch = z_batch_layers
 
                 # Get features
+                z_batch_label = torch.zeros([end-start, self.generator.c_dim], device=sample_device)
+                z_batch = self.mapping(z_batch,z_batch_label,truncation_psi=self.truncation)
                 feats = self.generator.get_features(z_batch)
                 feats = feats[int(np.sqrt(self.feature_size) - 1)]
 
@@ -291,6 +293,9 @@ class Trainer:
                 z = self.generator.sample_latent(self.batch_size)
                 z = z.to(self.device)
 
+                z_label = torch.zeros([self.batch_size, self.generator.c_dim], device=sample_device)
+                z = self.mapping(z,z_label,truncation_psi=self.truncation)
+
                 # Original features
                 orig_feats, img = self.generator.get_features(z)
                 orig_feats = orig_feats[int(np.sqrt(self.feature_size) - 1)]
@@ -305,7 +310,12 @@ class Trainer:
                     start, end = j * self.batch_size, (j + 1) * self.batch_size
 
                     # Get features
-                    feats = self.generator.get_features(z[start:end, ...])
+
+                    z_batch_label = torch.zeros([end-start, self.generator.c_dim], device=sample_device)
+                    z_batch = z[start:end, ...]
+                    z_batch = self.mapping(z_batch,z_batch_label,truncation_psi=self.truncation)
+
+                    feats = self.generator.get_features(z_batch)
                     feats = feats[int(np.sqrt(self.feature_size) - 1)]
                     feats = training_utils.feature_reshape_norm(feats)
                     # Take feature divergence
@@ -407,7 +417,6 @@ def train(cfg: DictConfig):
         model.parameters(),
     )
     scheduler = instantiate(cfg.scheduler, optimizer)
-    g_path = cfg.generator.generator_path
 
     # Tensorboard
     if cfg.tensorboard:
@@ -436,9 +445,11 @@ def train(cfg: DictConfig):
         feature_size=cfg.generator.feature_size,
         use_kmeans = cfg.kmeans.use_kmeans,
         k_th_cluster = cfg.kmeans.k_th_cluster,
-        kmeans_model_path=hydra.utils.to_absolute_path(cfg.kmeans.kmeans_model_path),
+        kmeans_model_path= hydra.utils.to_absolute_path(cfg.kmeans.kmeans_model_path),
         use_mse =  cfg.kmeans.use_mse_loss,
-        g_path = g_path
+        g_path = hydra.utils.to_absolute_path(cfg.generator.generator_path),
+        truncation = cfg.generator.truncation
+
     )     # Trainer init
 
     trainer.train() # Launch training process

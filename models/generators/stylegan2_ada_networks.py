@@ -520,15 +520,15 @@ class Generator(torch.nn.Module):
         _, img = self.synthesis(ws, noises=noises, **synthesis_kwargs)
         return img
 
-    def sample_latent(self, n_samples=1, seed=None, truncation=None):
+    def sample_latent(self, n_samples=1, sample_device='cpu', seed=None, truncation=None):
         if seed is None:
             seed = np.random.randint(
                 np.iinfo(np.int32).max
             )  # use (reproducible) global rand state
 
         rng = np.random.RandomState(seed)
-        z = (torch.from_numpy(rng.standard_normal(512 * n_samples).reshape(n_samples, 512)).float().to(self.device))  # [N, 512]
-        label = torch.zeros([1, G.c_dim], device=device)
+        z = torch.from_numpy(np.random.RandomState(int(seed)).randn(n_samples, self.z_dim)).float().to(sample_device)# [N, 512]
+        label = torch.zeros([n_samples, self.c_dim], device=sample_device)
 
         if self.w_primary:
             #z = self.model.style(z)
