@@ -1,7 +1,7 @@
 k: 30
-model_name: stylegan2_ada_ffhq # car_k30_f16-Km2-5_convs3
+model_name: stylegan2_ada_ffhq_ffhq_k30_f32-c5_9_convs5 # car_k30_f16-Km2-5_convs3
 batch_size: 5
-iterations: 12000 #eval = 100
+iterations: 1200 #eval = 100
 grad_clip_max_norm: null # change to float to activate
 
 optimizer:
@@ -21,8 +21,8 @@ scheduler:
 
 #train
 tensorboard: True
-eval_freq: 1200 # epoch = iterations // eval_freq
-eval_iters: 1200
+eval_freq: 120 # epoch = iterations // eval_freq
+eval_iters: 120
 feed_layers: null
 model_load_path: null
 

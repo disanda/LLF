@@ -533,13 +533,13 @@ class Generator(torch.nn.Module):
 
         return z
     
-    def get_ws(self, z, c, truncation_psi=1, truncation_cutoff=None):
-        ws = self.mapping(z, c, truncation_psi=truncation_psi, truncation_cutoff=truncation_cutoff)
-        return ws
+    # def get_ws(self, z, c, truncation_psi=1, truncation_cutoff=None):
+    #     ws = self.mapping(z, c, truncation_psi=truncation_psi, truncation_cutoff=truncation_cutoff)
+    #     return ws
     
-    def get_features(self, ws, x=None, img=None, mid_size=-1, noises=None,**block_kwargs):
-        x, img = self.synthesis(ws, x, img, mid_size, noises=noises, **block_kwargs)
-        return x
+    # def get_features(self, ws, x=None, img=None, mid_size=-1, noises=None,**block_kwargs):
+    #     x, img = self.synthesis(ws, x=None, img=None, mid_size=-1, noises=noises, **block_kwargs)
+    #     return x, img
 
         
 
