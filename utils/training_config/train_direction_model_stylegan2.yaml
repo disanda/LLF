@@ -1,7 +1,7 @@
+model_name: ffhq_k30_f32-c5_9_convs5 # learning eye
 k: 30
-model_name: church_k30_f16-c3-5_convs3
-batch_size: 5
-iterations: 12000 #eval = 100
+batch_size: 3
+iterations: 1200 #eval = 100
 grad_clip_max_norm: null # change to float to activate
 optimizer:
   _target_: torch.optim.Adam
@@ -16,17 +16,17 @@ scheduler:
   _target_: torch.optim.lr_scheduler.MultiStepLR
   milestones: [1000, 5000]
   gamma: 0.2
-generator_path: './checkpoint/generators/stylegan2-church-config-f.pt'
+generator_path: './checkpoint/generators/stylegan2-ffhq-config-f.pt'
 #train
 tensorboard: True
-eval_freq: 1200 # epoch = iterations // eval_freq
-eval_iters: 1200
+eval_freq: 120 # epoch = iterations // eval_freq
+eval_iters: 120
 feed_layers: null
 model_load_path: null
 
 kmeans:
   use_kmeans: True
-  kmeans_model_path: './checkpoint/kmeans_segmentation/church_kmeans_k_clusters_5_feature_size_16_samples_256_feature_layer_convs.3_trunc_0.5.pkl' 
+  kmeans_model_path: './checkpoint/kmeans_segmentation/cdataset_ffhq_kmeans_k_clusters_9_feature_size_32_samples_128_feature_layer_convs.5_trunc_0.5.pkl' 
   k_th_cluster: 0
   use_mse_loss: False
 
@@ -39,9 +39,9 @@ generator:
   # feature_layer: generator.layers.0
   _target_: models.generators.stylegan2.stylegan2_wrap.StyleGAN2Generator ##StyleGAN2
   truncation: 0.85
-  class_name: church
+  class_name: ffhq
   use_w: true
-  feature_layer: convs.3 # conv1: 4*4 , [convs.0, convs.1] : 8*8,  [convs.2, convs.3] : 16*16, [convs.4, convs.5] : 32*32,  [convs.6, convs.7] : 64*64,
+  feature_layer: convs.5 # conv1: 4*4 , [convs.0, convs.1] : 8*8,  [convs.2, convs.3] : 16*16, [convs.4, convs.5] : 32*32,  [convs.6, convs.7] : 64*64,
 
 #checkpoint_path:
 model:

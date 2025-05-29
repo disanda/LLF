@@ -457,7 +457,7 @@ class SynthesisNetwork(torch.nn.Module):
                 self.num_ws += block.num_torgb
             setattr(self, f'b{res}', block)
 
-    def forward(self, ws, x=None, img=None, mid_size=-1, noises=None,**block_kwargs):
+    def forward(self, ws, feat_res=None, x=None, img=None, mid_size=-1, noises=None,**block_kwargs):
         block_ws = []
         with torch.autograd.profiler.record_function('split_ws'):
             misc.assert_shape(ws, [None, self.num_ws, self.w_dim])
@@ -468,7 +468,6 @@ class SynthesisNetwork(torch.nn.Module):
                 block_ws.append(ws.narrow(1, w_idx, block.num_conv + block.num_torgb))
                 w_idx += block.num_conv
 
-        y = []
         if x == None:
             for res, cur_ws in zip(self.block_resolutions, block_ws):
                 if res <= mid_size or mid_size == -1:
@@ -477,8 +476,7 @@ class SynthesisNetwork(torch.nn.Module):
                         x, img = block(x, img, cur_ws, **block_kwargs)
                     else:
                         x, img = block(x, img, cur_ws, noise_add=noises[int(math.log2(res)-2)],**block_kwargs)
-                    y.append(x)
-            return y, img
+            return x, img
         else:
             for res, cur_ws in zip(self.block_resolutions, block_ws):
                 if res > mid_size:
@@ -487,8 +485,7 @@ class SynthesisNetwork(torch.nn.Module):
                         x, img = block(x, img, cur_ws, **block_kwargs)
                     else:
                         x, img = block(x, img, cur_ws, noise_add=noises[int(math.log2(res)-2)],**block_kwargs)
-                    y.append(x)
-            return y, img
+            return x, img
     
 
 #----------------------------------------------------------------------------
@@ -540,9 +537,9 @@ class Generator(torch.nn.Module):
         ws = self.mapping(z, c, truncation_psi=truncation_psi, truncation_cutoff=truncation_cutoff)
         return ws
     
-    def get_features(self,ws, x=None, img=None, mid_size=-1, noises=None,**block_kwargs):
+    def get_features(self, ws, x=None, img=None, mid_size=-1, noises=None,**block_kwargs):
         x, img = self.synthesis(ws, x, img, mid_size, noises=noises, **block_kwargs)
-        return x, img
+        return x
 
         
 

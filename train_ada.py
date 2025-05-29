@@ -178,8 +178,7 @@ class Trainer:
 
             # Original features
             with torch.no_grad():
-                orig_feats, imgs = self.generator.get_features(z) # out = out[out_feature_id]
-                orig_feats = orig_feats[int(np.sqrt(self.feature_size) - 1)]
+                orig_feats, _ = self.generator.get_features(z,self.feature_size) # out = out[out_feature_id]
 
             #获取语义分割
             if self.use_kmeans:
@@ -214,10 +213,9 @@ class Trainer:
                 #     z_batch = z_batch_layers
 
                 # Get features
-                z_batch_label = torch.zeros([end-start, self.generator.c_dim], device=sample_device)
-                z_batch = self.mapping(z_batch,z_batch_label,truncation_psi=self.truncation)
-                feats = self.generator.get_features(z_batch)
-                feats = feats[int(np.sqrt(self.feature_size) - 1)]
+                z_batch_label = torch.zeros([end-start, self.generator.c_dim], device=self.device)
+                z_batch = self.generator.get_ws(z_batch,z_batch_label,truncation_psi=self.truncation)
+                feats, _ = self.generator.get_features(z_batch,self.feature_size)
 
                 #备份feats_unchange 预测语义分割图, #获得mask
                 if self.use_kmeans:
@@ -293,12 +291,11 @@ class Trainer:
                 z = self.generator.sample_latent(self.batch_size)
                 z = z.to(self.device)
 
-                z_label = torch.zeros([self.batch_size, self.generator.c_dim], device=sample_device)
-                z = self.mapping(z,z_label,truncation_psi=self.truncation)
+                z_label = torch.zeros([self.batch_size, self.generator.c_dim], device=self.device)
+                z = self.generator.get_ws(z,z_label,truncation_psi=self.truncation)
 
                 # Original features
-                orig_feats, img = self.generator.get_features(z)
-                orig_feats = orig_feats[int(np.sqrt(self.feature_size) - 1)]
+                orig_feats, _ = self.generator.get_features(z,self.feature_size)
                 orig_feats = training_utils.feature_reshape_norm(orig_feats)
                 # Apply Directions
                 z = self.model(z)
@@ -311,12 +308,11 @@ class Trainer:
 
                     # Get features
 
-                    z_batch_label = torch.zeros([end-start, self.generator.c_dim], device=sample_device)
+                    z_batch_label = torch.zeros([end-start, self.generator.c_dim], device=self.device)
                     z_batch = z[start:end, ...]
-                    z_batch = self.mapping(z_batch,z_batch_label,truncation_psi=self.truncation)
+                    z_batch = self.generator.get_ws(z_batch,z_batch_label,truncation_psi=self.truncation)
 
-                    feats = self.generator.get_features(z_batch)
-                    feats = feats[int(np.sqrt(self.feature_size) - 1)]
+                    feats, _ = self.generator.get_features(z_batch,self.feature_size)
                     feats = training_utils.feature_reshape_norm(feats)
                     # Take feature divergence
                     feats = feats - orig_feats
