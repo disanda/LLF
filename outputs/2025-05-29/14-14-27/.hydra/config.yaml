@@ -1,0 +1,47 @@
+? ''
+: ? ''
+  : training_config:
+      k: 30
+      model_name: stylegan2_ada_ffhq
+      batch_size: 5
+      iterations: 12000
+      grad_clip_max_norm: null
+      optimizer:
+        _target_: torch.optim.Adam
+        lr: 0.001
+        weight_decay: 0.001
+      scheduler:
+        _target_: torch.optim.lr_scheduler.MultiStepLR
+        milestones:
+        - 1000
+        - 5000
+        gamma: 0.2
+      generator_path: ./checkpoint/generators/stylegan2-ada-ffhq.pkl
+      tensorboard: true
+      eval_freq: 1200
+      eval_iters: 1200
+      feed_layers: null
+      model_load_path: null
+      kmeans:
+        use_kmeans: true
+        kmeans_model_path: ./checkpoint/kmeans/dataset_ffhq_kmeans_k_clusters_9_feature_size_32_samples_128_feature_layer_convs.5_trunc_0.5.pkl
+        k_th_cluster: 5
+        use_mse_loss: false
+      generator:
+        _target_: models.generators.stylegan2_ada_networks.Generator
+        truncation: 0.85
+        class_name: ffhq
+        use_w: true
+        feature_size: 32
+      model:
+        size: 512
+        _target_: model.NonlinearConditional
+        normalize: true
+        alpha: 0.1
+        depth: 3
+        final_ac: false
+      loss:
+        _target_: loss.ContrastiveLoss
+        temp: 0.5
+        abs: true
+        reduce: mean

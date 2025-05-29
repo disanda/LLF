@@ -22,7 +22,7 @@ import utils.training_utils as training_utils
 #from models.generators.stylegan2.stylegan2_wrap import StyleGAN2Generator # StyleGAN2v2
 
 # load and print config
-conf_path =  './utils/visual_config_ffhq.yaml' # 
+conf_path =  './utils/inference_config/visual_config_ffhq.yaml' # 
 cfg = yaml.load(open(conf_path), Loader=yaml.FullLoader)
 cfg = OmegaConf.create(cfg)
 dirs = cfg.n_dirs

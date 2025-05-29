@@ -394,7 +394,7 @@ class Trainer:
 
         self.logger.info(f"Checkpoint loaded, resuming from iteration {self.start_iteration}")
 
-@hydra.main(config_path="utils", config_name="train_direction_model_conf")
+@hydra.main(config_path="./utils/training_config", config_name="train_direction_model_stylegan2_ada")
 def train(cfg: DictConfig):
     # Init model
     model_save_path = os.getcwd()
