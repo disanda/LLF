@@ -1,6 +1,6 @@
 k: 30
 model_name: stylegan2_ada_ffhq_ffhq_k30_f32-c5_9_convs5 # car_k30_f16-Km2-5_convs3
-batch_size: 5
+batch_size: 3
 iterations: 1200 #eval = 100
 grad_clip_max_norm: null # change to float to activate
 

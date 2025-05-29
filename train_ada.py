@@ -171,13 +171,11 @@ class Trainer:
         self.generator.eval()
 
         for i in range(iterations):
-            # To device
-            z = self.generator.sample_latent(self.batch_size, self.device, truncation = self.truncation)
-            z = z.to(self.device)
-            z_orig = z
 
             # Original features
             with torch.no_grad():
+                z = self.generator.sample_latent(self.batch_size, self.device, truncation = self.truncation).to(self.device)
+                z_orig = z
                 orig_feats, _ = self.generator.synthesis(z, mid_size=self.feature_size) # out = out[out_feature_id]
 
             #获取语义分割
@@ -199,18 +197,6 @@ class Trainer:
                 # Prepare batch
                 start, end = j * self.batch_size, (j + 1) * self.batch_size
                 z_batch = z[start:end, ...]
-
-                # Manipulate only asked layers
-                # if self.feed_layers is not None:
-                #     n_latent = self.generator.n_latent()
-
-                #     z_batch_layers = []
-                #     for i in range(n_latent):
-                #         if i in self.feed_layers:
-                #             z_batch_layers.append(z_batch)
-                #         else:
-                #             z_batch_layers.append(z_orig)
-                #     z_batch = z_batch_layers
 
                 # Get features
                 z_batch_label = torch.zeros([end-start, self.generator.c_dim], device=self.device)
