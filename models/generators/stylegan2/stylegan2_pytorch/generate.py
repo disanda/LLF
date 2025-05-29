@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    args.latent = 512
+    args.latent = 512 #
     args.n_mlp = 8
 
     g_ema = Generator(

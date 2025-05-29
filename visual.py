@@ -30,22 +30,22 @@ save_imgs = cfg.save_single_imgs
 #dirs = [i for i in range(85,100)]
 #print(cfg)
 
-use_gpu = True
+use_gpu = torch.cuda.is_available() # False, True
 device = torch.device("cuda" if use_gpu else "cpu")
 
-# init models
-model: torch.nn.Module = instantiate(cfg.model, k=cfg.k).to(device)
+# init generator models
 generator: torch.nn.Module = instantiate(cfg.generator, device=device, checkpoint_path=to_absolute_path(cfg.generator_path))#StyleGAN2Generator(device,truncation= 0.7,feature_layer = 'conv1', use_w = True, checkpoint_path = checkpoint_path)
 
-# preload models
-checkpoint = torch.load(to_absolute_path(cfg.model_path), map_location=device)
+# preload direction models
+checkpoint = torch.load(to_absolute_path(cfg.direction_model_path), map_location=device)
+model: torch.nn.Module = instantiate(cfg.model, k=cfg.k).to(device)
 model.load_state_dict(checkpoint["model"])
 
 # set to eval
 model.eval()
 generator.eval()
 
-img_path = cfg.model_name + '_' + str(cfg.feed_layers) + '_seed_'+str(cfg.seed)
+img_path = './outputs/' + cfg.model_name + '_' + str(cfg.feed_layers) + '_seed_'+str(cfg.seed)
 if save_imgs and not os.path.exists(img_path):
     os.mkdir(img_path)
 
@@ -288,7 +288,7 @@ class Visualizer:
                 imgs_grid = torch.cat([img_k, imgs_grid], dim=-1)
 
                 #torchvision.utils.save_image(imgs_grid, f"%s_seed%d_%d.png"%(self.name, self.seed, i))
-                torchvision.utils.save_image(imgs_grid, f"%s_layers%s_%d_seed%d.png"%(self.name, self.feed_layers, i,self.seed))
+                torchvision.utils.save_image(imgs_grid, f"./outputs/%s_layers%s_%d_seed%d_.png"%(self.name, self.feed_layers, i,self.seed))
                 # Update progress bar
                 pbar.update()
 

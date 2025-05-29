@@ -1,7 +1,7 @@
-k: 100
+k: 30 # 30
 model_name: stylegan2_ffhq_results
 generator_path: ./checkpoint/generators/stylegan2-ffhq-config-f.pt
-model_path: ./outputs/k30_32x32-Kmeans0_5_convs5_epoch8_best.pt
+direction_model_path: ./checkpoint/direction_models/k30_32x32-Kmeans0_5_convs5_epoch8_best.pt
 n_samples: 1 # 30 #./checkpoint/latent_code.npy  #id5_norm376.pt  #id2_norm375.pt #./checkpoint/latent_code.npy #./checkpoint/real_img/id10-i0-w1900-norm373.856293-imgLoss1.587639.pt 
 save_single_imgs: true
 sample_random: false
@@ -11,17 +11,17 @@ model:
   _target_: model.NonlinearConditional
   normalize: true
   alpha: 0.1
-  depth: 1
+  depth: 3 #layer for each direction, 1 or 3
   final_ac: false
 generator:
   _target_: models.generators.stylegan2.stylegan2_wrap.StyleGAN2Generator
-  device: cuda
-  truncation: 0.7 # for real image truncation = 1
+  device: cpu # cuda
+  truncation: 0.85 # 0.7 or 0.85(better) for real image truncation = 1
   class_name: ffhq
   use_w: true
   #feature_layer: convs.1 # conv1: 4*4 , [convs.0, convs.1] : 8*8,  [convs.2, convs.3] : 16*16, [convs.4, convs.5] : 32*32,  [convs.6, convs.7] : 64*64
 image_size: 256
-n_dirs: 30  #30  # -1: all, or list [33,34] : omegaconf.listconfig.ListConfig
+n_dirs: -1  #30  # -1: all, or list [33,34] : omegaconf.listconfig.ListConfig
 alphas:
 # - -150
 # - -200
@@ -41,56 +41,52 @@ alphas:
 # - -150
 # - -140
 # - -130
-# - -120
+- -120
 # - -110
 # - -100
 # - -90
 # - -80
 # - -70
-# - -60
+- -60
 # - -50
-# - -45
+#- -45
 # - -40
 # - -35
-# - -30
-- -25
-- -20
+- -30
+#- -25
+# - -20
 - -15
-- -10
-- -5
-- -2.5
-- -1.5
+# - -10
+# - -5
+# - -2.5
+# - -1.5
 # # - -12.5
 # - -10
 # - -20
 # # - 7.5
 # - 20
 # - 10
-- 1.5
-- 2.5
-- 5
-- 10
+#- 1.5
+#- 2.5
+#- 5
+#- 10
 - 15
-- 20
-- 25
-# - 30
+# - 20
+#- 25
+- 30
 # - 35
 # - 40
-# - 45
+#- 45
 # - 50
-# - 60
+- 60
 # - 70
 # - 80
 # - 90
 # - 100
 # - 110
-# - 120
+- 120
 # - 130
 # - 140
-
-
-
-
 
 
 feed_layers:
@@ -98,10 +94,10 @@ feed_layers:
 #- 1 # hair-shape, face-shape  [80,240] (head-zoom) pose
 # - 2 # eyeglasses, pose, hair-shape, face-shape, age, Gender
 #- 3 # hair, face, identity, age,Gender, Mouth, Eyeglasses,   face-shape, xiaba, smile, pose, hair_more
-- 4 #  hair, mouth-shape face-shape [20,80] @@@ smile, mouth(related-expression or hair-man)  mouth-shape face-shape  bald
+#- 4 #  hair, mouth-shape face-shape [20,80] @@@ smile, mouth(related-expression or hair-man)  mouth-shape face-shape  bald
 
-- 5 # expression [feeling, mood] mouth-shape&color eye brow
-#- 6   #eye-shape, brow-shape 6-7  [20,40,80] face-color Beard-shape age
+#- 5 # expression [feeling, mood] mouth-shape&color eye brow
+- 6   #eye-shape, brow-shape 6-7  [20,40,80] face-color Beard-shape age
 # - 7 # hair&eye [only man] face-color hair-color
 # - 8 # color-light: [hair, face, background]
 

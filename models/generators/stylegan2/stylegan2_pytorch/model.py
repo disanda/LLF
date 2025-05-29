@@ -394,7 +394,7 @@ class Generator(nn.Module):
     ):
         super().__init__()
 
-        self.size = size
+        self.size = size # 512
 
         self.style_dim = style_dim
 
@@ -425,7 +425,7 @@ class Generator(nn.Module):
         self.conv1 = StyledConv(self.channels[4], self.channels[4], 3, style_dim, blur_kernel=blur_kernel)
         self.to_rgb1 = ToRGB(self.channels[4], style_dim, upsample=False)
 
-        self.log_size = int(math.log(size, 2))
+        self.log_size = int(math.log(size, 2)) # size = 512 =>  log_size = 9
         self.num_layers = (self.log_size - 2) * 2 + 1
 
         self.convs = nn.ModuleList()
@@ -460,7 +460,7 @@ class Generator(nn.Module):
 
             in_channel = out_channel
 
-        self.n_latent = self.log_size * 2 - 2
+        self.n_latent = self.log_size * 2 - 2 # 18-2 = 16
         self.strided_style = StridedStyle(self.n_latent)
 
     def make_noise(self):
