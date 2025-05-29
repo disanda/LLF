@@ -54,7 +54,8 @@ class Trainer:
         use_kmeans: bool = False,
         k_th_cluster: int = 5,
         kmeans_model_path:str = "",
-        use_mse =  False
+        use_mse =  False,
+        g_path = None
     ) -> None:
 
         # Logging / Saving  / Device
@@ -68,7 +69,7 @@ class Trainer:
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
-        self.generator = generator
+        self.generator = legacy.load_model(g_path, device)
         self.feed_layers = feed_layers
 
         #Eval
@@ -401,13 +402,12 @@ def train(cfg: DictConfig):
     log_utils.display_config(cfg)
     model: torch.nn.Module = instantiate(cfg.model, k=cfg.k).to(device)
     loss_fn: torch.nn.Module = instantiate(cfg.loss, k=cfg.k).to(device)
-    model_path = cfg.generator_path
-    generator = legacy.load_model(model_path, device)
     optimizer: torch.optim.Optimizer = instantiate(
         cfg.optimizer,
         model.parameters(),
     )
     scheduler = instantiate(cfg.scheduler, optimizer)
+    g_path = cfg.generator.generator_path
 
     # Tensorboard
     if cfg.tensorboard:
@@ -423,7 +423,6 @@ def train(cfg: DictConfig):
         model=model,
         loss_fn=loss_fn,
         optimizer=optimizer,
-        generator=generator,
         batch_size=cfg.batch_size,
         iterations=cfg.iterations,
         device=device,
@@ -434,11 +433,12 @@ def train(cfg: DictConfig):
         writer=writer,
         save_path=model_save_path,
         checkpoint_path=cfg.model_load_path,
-        feature_size=cfg.feature_size,
+        feature_size=cfg.generator.feature_size,
         use_kmeans = cfg.kmeans.use_kmeans,
         k_th_cluster = cfg.kmeans.k_th_cluster,
         kmeans_model_path=hydra.utils.to_absolute_path(cfg.kmeans.kmeans_model_path),
-        use_mse =  cfg.kmeans.use_mse_loss
+        use_mse =  cfg.kmeans.use_mse_loss,
+        g_path = g_path
     )     # Trainer init
 
     trainer.train() # Launch training process
