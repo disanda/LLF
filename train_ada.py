@@ -274,8 +274,8 @@ class Trainer:
         for i in range(iterations):
             with torch.no_grad():
                 # To device
-                z = self.generator.sample_latent(self.batch_size)
-                z = z.to(self.device)
+                #z = self.generator.sample_latent(self.batch_size)
+                z = self.generator.sample_latent(self.batch_size, self.device, truncation = self.truncation).to(self.device)
 
                 z_label = torch.zeros([self.batch_size, self.generator.c_dim], device=self.device)
                 z = self.generator.mapping(z,z_label,truncation_psi=self.truncation)
