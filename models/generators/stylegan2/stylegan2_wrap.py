@@ -22,7 +22,6 @@ from models.generators.stylegan2.stylegan2_pytorch.model import Generator as Sty
 
 #from colat.utils.model_utils import download_ckpt
 
-
 class StyleGAN2Generator(Generator):
     def __init__(
         self,
@@ -204,19 +203,18 @@ class StyleGAN2Generator(Generator):
         i = 1
         noise_i = 1
 
-        for conv1, conv2, to_rgb in zip(
-            self.model.convs[::2], self.model.convs[1::2], self.model.to_rgbs
-        ):
+        for conv1, conv2, to_rgb in zip(self.model.convs[::2], self.model.convs[1::2], self.model.to_rgbs):
+            print(f"convs.{i-1}")
             out = conv1(out, latent[:, i], noise=noise[noise_i])
-            if f"convs.{i-1}" in layer_name:
+            if f"convs.{i-1}" == layer_name:
                 return out
 
             out = conv2(out, latent[:, i + 1], noise=noise[noise_i + 1])
-            if f"convs.{i}" in layer_name:
+            if f"convs.{i}" == layer_name:
                 return out
 
             skip = to_rgb(out, latent[:, i + 2], skip)
-            if f"to_rgbs.{i//2}" in layer_name:
+            if f"to_rgbs.{i//2}" == layer_name:
                 return out
 
             i += 2
@@ -233,3 +231,106 @@ class StyleGAN2Generator(Generator):
         for i in range(3, self.model.log_size + 1):
             for _ in range(2):
                 self.noise.append(torch.randn(1, 1, 2 ** i, 2 ** i, device=self.device))
+
+    def get_ws(self, z, c=None, truncation_psi=1, truncation_cutoff=None):
+        if self.truncation < 1:
+            style_t = []
+            for style in styles:
+                style_t.append(self.latent_avg + self.truncation * (style - self.latent_avg))
+            styles = style_t
+        ws = self.model.style(z.float())
+        return ws
+
+    def get_features(self, ws, x=None, img=None, mid_size=-1, noise_in=None, layer_name=None):
+        img_resolution_log2 = int(np.log2(self.resolution))
+        block_resolutions = [2 ** i for i in range(2, img_resolution_log2 + 1)]
+        
+        styles = ws if isinstance(ws, list) else [ws]
+        inject_index = None
+        if noise_in == None:
+            noise = self.noise
+        else:
+            noise = noise_in
+        # print('-------')
+        # print(len(noise))
+        # for i in noise:
+        #     print(i.shape)
+
+        if not self.w_primary:
+            styles = [self.model.style(s) for s in styles]
+
+        if self.truncation < 1:
+            style_t = []
+            for style in styles:
+                style_t.append(self.latent_avg + self.truncation * (style - self.latent_avg))
+            styles = style_t
+
+        if len(styles) == 1:
+            # One global latent
+            inject_index = self.model.n_latent
+
+            if styles[0].ndim < 3:
+                latent = styles[0].unsqueeze(1).repeat(1, inject_index, 1)
+
+            else:
+                latent = styles[0] #如果是 [N, 18, 512] 也是可以的
+
+        elif len(styles) == 2:
+            # Latent mixing with two latents
+            if inject_index is None:
+                inject_index = random.randint(1, self.model.n_latent - 1)
+            latent = styles[0].unsqueeze(1).repeat(1, inject_index, 1)
+            latent2 = (styles[1].unsqueeze(1).repeat(1, self.model.n_latent - inject_index, 1))
+            latent = self.model.strided_style(torch.cat([latent, latent2], 1))
+        else:# One latent per layer
+            assert (
+                len(styles) == self.model.n_latent
+            ), f"Expected {self.model.n_latents} latents, got {len(styles)}"
+            styles = torch.stack(styles, dim=1)  # [N, 18, 512]
+            latent = self.model.strided_style(styles)
+
+        # if "style" in layer_name:
+        #     return latent
+
+        out = self.model.input(latent)
+        # if "input" == layer_name:
+        #     return out
+
+        out = self.model.conv1(out, latent[:, 0], noise=noise[0])
+        # if "conv1" in layer_name:
+        #     return out
+
+        skip = self.model.to_rgb1(out, latent[:, 1])
+        # if "to_rgb1" in layer_name:
+        #     return skip
+
+        i = 1
+        noise_i = 1
+
+        if x == None:
+            for conv1, conv2, to_rgb, res in zip(self.model.convs[::2], self.model.convs[1::2], self.model.to_rgbs, block_resolutions):
+                if res <= mid_size or mid_size == -1:
+                    print(f"convs.{i-1}")
+                    out = conv1(out, latent[:, i], noise=noise[noise_i])
+                    out = conv2(out, latent[:, i + 1], noise=noise[noise_i + 1])
+                    skip = to_rgb(out, latent[:, i + 2], skip)
+                i += 2
+                noise_i += 2
+                image = skip
+            return out, image
+        else:
+            skip = img
+            out = x
+            for conv1, conv2, to_rgb, res in zip(self.model.convs[::2], self.model.convs[1::2], self.model.to_rgbs, block_resolutions):
+                if res > mid_size:
+                    print(f"convs.{i-1}")
+                    print(x.shape)
+                    print(latent[:, i].shape)
+                    print(noise[noise_i].shape)
+                    out = conv1(out, latent[:, i], noise=noise[noise_i])
+                    out = conv2(out, latent[:, i + 1], noise=noise[noise_i + 1])
+                    skip = to_rgb(out, latent[:, i + 2], skip)
+                i += 2
+                noise_i += 2
+                image = skip
+            return out, image

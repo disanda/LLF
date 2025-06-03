@@ -68,15 +68,17 @@ https://drive.google.com/file/d/1tI72PrrZTFf-GsjMF1UgGGVnKADNdLqa/view?usp=shari
 
 ### Here is different feature sizes before output image (N, 3,1024,1024):
 
+```
 - torch.Size([10, 512, 4, 4]), conv0 (const intputs) conv1 
-- torch.Size([10, 512, 8, 8]) , convs.2, convs.3
-- torch.Size([10, 512, 16, 16]) , convs.4, convs.5
-- torch.Size([10, 512, 32, 32]) , convs.6, convs.7
-- torch.Size([10, 512, 64, 64]) , convs.8, convs.9   # batch_size = 4, k = 28
-- torch.Size([10, 256, 128, 128]) , convs.10, convs.11 # batch_size = 4, k = 20
-- torch.Size([10, 128, 256, 256]) ,  convs.12, convs.13
-- torch.Size([10, 64, 512, 512]) , convs.14, convs.15
-- torch.Size([10, 32, 1024, 1024]) , convs.16, convs.17
+- torch.Size([10, 512, 8, 8]) , convs.0, convs.1 (the 2nd-3rd layer)
+- torch.Size([10, 512, 16, 16]) , convs.2, convs.3 (the 4th-5th layer)
+- torch.Size([10, 512, 32, 32]) , convs.4, convs.5
+- torch.Size([10, 512, 64, 64]) , convs.6, convs.7   # batch_size = 4, k = 28
+- torch.Size([10, 256, 128, 128]) , convs.8, convs.9 # batch_size = 4, k = 20
+- torch.Size([10, 128, 256, 256]) ,  convs.10, convs.11
+- torch.Size([10, 64, 512, 512]) , convs.12, convs.13
+- torch.Size([10, 32, 1024, 1024]) , convs.14, convs.15 (the 16th-17th layer)
+```
 
 and a guideline for morphing image as:
 

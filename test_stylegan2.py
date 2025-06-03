@@ -15,50 +15,42 @@ import torchvision
 from utils.training_utils import *
 
 # ------------------ test  styleGAN2-ffhq ---------------
+# - torch.Size([10, 512, 4, 4]), conv0 (const intputs) conv1 
+# - torch.Size([10, 512, 8, 8]) , convs.0, convs.1
+# - torch.Size([10, 512, 16, 16]) , convs.2, convs.3
+# - torch.Size([10, 512, 32, 32]) , convs.4, convs.5
+# - torch.Size([10, 512, 64, 64]) , convs.6, convs.7   # batch_size = 4, k = 28
+# - torch.Size([10, 256, 128, 128]) , convs.8, convs.9 # batch_size = 4, k = 20
+# - torch.Size([10, 128, 256, 256]) ,  convs.10, convs.11
+# - torch.Size([10, 64, 512, 512]) , convs.12, convs.13
+# - torch.Size([10, 32, 1024, 1024]) , convs.14, convs.15
 
 use_gpu = torch.cuda.is_available()
 device = torch.device("cuda" if use_gpu else "cpu")
 generator_path = './checkpoint/generators/stylegan2-ffhq-config-f.pt'
-generator = StyleGAN2Generator(device,truncation= 0.7,feature_layer = 'convs.6', use_w = False, checkpoint_path = generator_path)
+generator = StyleGAN2Generator(device,truncation= 1 ,feature_layer = 'convs.14', use_w = True, checkpoint_path = generator_path)
 print('#######################')
+#print(generator)
 
 with torch.no_grad():
-    set_seed(100000)
-    w1 = torch.randn(10,512).to(device)
-    x1 = generator(w1)
-    #x = generator.partial_forward(w, "convs.5")
-    set_seed(100001)
-    w2 = torch.randn(10,512).to(device)
-    set_seed(100002)
-    w3 = torch.randn(10,512).to(device)
+    set_seed(77249920)
+    z1 = torch.randn(1,512).to(device)
+    label = torch.zeros([1, 0], device=device) # G.c_dim = 0
+    ws_original = generator.get_ws(z1,label,truncation_psi=0.7)
+    handle_size = 128
+    feature_original, img_mid_original = generator.get_features(ws_original,x=None, img=None, mid_size= handle_size)
+    img = generator(ws_original)
+    
+    z2 = torch.from_numpy(np.random.RandomState(int(3)).randn(1, 512)).to(device) # G.z_dim = 512
+    label = torch.zeros([1, 0], device=device) # G.c_dim = 0
+    ws_original2 = generator.get_ws(z2,label,truncation_psi=0.7)
+    _, img_show_original2 = generator.get_features(ws=ws_original,x=feature_original,img=img_mid_original,mid_size=handle_size)
 
-    x2 = generator(w2)
-
-    f1 = generator.get_features(w1)
-    f2 = generator.get_features(w2)
-    f3 = generator.get_features(w3)
-
-#x3 = torch.cat([x1,x2])
-f1 = f1[:,:1,:,:]
-f2 = f2[:,:1,:,:]
-f3 = f3[:,:1,:,:]
-print(f1.shape)
-print(f2.shape)
-print(f3.shape)
-
-f4 = f2 - f1 
-f5 = f3 - f1
-
-#torchvision.utils.save_image(x3*0.5+0.5,'./face_10.jpg',nrow=10)
-
-flag = 0 
-for  a,b,c,d,e in zip(f1, f2, f3, f4, f5):
-    torchvision.utils.save_image(a,'./f1_%d_convs9_64x64.png'%flag,nrow=1)
-    torchvision.utils.save_image(b,'./f2_%d.png'%flag,nrow=1)
-    torchvision.utils.save_image(c,'./f3_%d.png'%flag,nrow=1)
-    torchvision.utils.save_image(d,'./f4_%d.png'%flag,nrow=1)
-    torchvision.utils.save_image(e,'./f5_%d.png'%flag,nrow=1)
-    flag = flag + 1
-
-
-
+print(feature_original.shape)
+print(img_mid_original.shape)
+print(img_mid_original.mean())
+#print(img_show_original.shape)
+torchvision.utils.save_image(img_mid_original*0.5+0.5, './img_mid_original_mean.png')
+torchvision.utils.save_image(img_mid_original, './img_mid_original.png')
+torchvision.utils.save_image(img*0.5+0.5, './img2.png')
+torchvision.utils.save_image(img_show_original2*0.5+0.5, './img_show_original2.png')
