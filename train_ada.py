@@ -272,11 +272,12 @@ class Trainer:
 
         # Loop
         for i in range(iterations):
+            rng = np.random.RandomState(seed)
             with torch.no_grad():
                 # To device
                 #z = self.generator.sample_latent(self.batch_size)
-                z = self.generator.sample_latent(self.batch_size, self.device, truncation = self.truncation).to(self.device)
-
+                #z = self.generator.sample_latent(self.batch_size, self.device, truncation = self.truncation).to(self.device)
+                z = torch.from_numpy(rng.standard_normal(512 * n_samples).reshape(n_samples, 512)).float().to(self.device)
                 z_label = torch.zeros([self.batch_size, self.generator.c_dim], device=self.device)
                 z = self.generator.mapping(z,z_label,truncation_psi=self.truncation)
 
@@ -438,7 +439,7 @@ def train(cfg: DictConfig):
 
 if __name__ == "__main__":
     use_gpu = torch.cuda.is_available()
-    device = torch.device("cuda" if use_gpu else "cpu")
+    device = torch.device("cuda:1" if use_gpu else "cpu")
     print('#######################')
     train()
 
