@@ -272,12 +272,12 @@ class Trainer:
 
         # Loop
         for i in range(iterations):
-            rng = np.random.RandomState(seed)
+            rng = np.random.RandomState(i)
             with torch.no_grad():
                 # To device
                 #z = self.generator.sample_latent(self.batch_size)
                 #z = self.generator.sample_latent(self.batch_size, self.device, truncation = self.truncation).to(self.device)
-                z = torch.from_numpy(rng.standard_normal(512 * n_samples).reshape(n_samples, 512)).float().to(self.device)
+                z = torch.from_numpy(rng.standard_normal(512 * self.batch_size).reshape(self.batch_size, 512)).float().to(self.device)
                 z_label = torch.zeros([self.batch_size, self.generator.c_dim], device=self.device)
                 z = self.generator.mapping(z,z_label,truncation_psi=self.truncation)
 
@@ -432,7 +432,6 @@ def train(cfg: DictConfig):
         use_mse =  cfg.kmeans.use_mse_loss,
         g_path = hydra.utils.to_absolute_path(cfg.generator.generator_path),
         truncation = cfg.generator.truncation
-
     )     # Trainer init
 
     trainer.train() # Launch training process

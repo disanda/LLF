@@ -174,7 +174,7 @@ class Trainer:
 
             # Original features
             with torch.no_grad():
-                orig_feats = self.generator.get_features(z)
+                orig_feats = self.generator.get_features_pre(z)
 
             #获取语义分割
             if self.use_kmeans:
@@ -209,7 +209,7 @@ class Trainer:
                     z_batch = z_batch_layers
 
                 # Get features
-                feats = self.generator.get_features(z_batch)
+                feats = self.generator.get_features_pre(z_batch)
 
                 #备份feats_unchange 预测语义分割图, #获得mask
                 if self.use_kmeans:
@@ -286,7 +286,7 @@ class Trainer:
                 z = z.to(self.device)
 
                 # Original features
-                orig_feats = self.generator.get_features(z)
+                orig_feats = self.generator.get_features_pre(z)
                 orig_feats = training_utils.feature_reshape_norm(orig_feats)
                 # Apply Directions
                 z = self.model(z)
@@ -298,7 +298,7 @@ class Trainer:
                     start, end = j * self.batch_size, (j + 1) * self.batch_size
 
                     # Get features
-                    feats = self.generator.get_features(z[start:end, ...])
+                    feats = self.generator.get_features_pre(z[start:end, ...])
                     feats = training_utils.feature_reshape_norm(feats)
                     # Take feature divergence
                     feats = feats - orig_feats
