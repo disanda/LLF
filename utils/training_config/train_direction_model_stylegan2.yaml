@@ -26,7 +26,7 @@ model_load_path: null
 
 kmeans:
   use_kmeans: True
-  kmeans_model_path: './checkpoint/kmeans_segmentation/cdataset_ffhq_kmeans_k_clusters_9_feature_size_32_samples_128_feature_layer_convs.5_trunc_0.5.pkl' 
+  kmeans_model_path: './checkpoint/kmeans_segmentation/dataset_ffhq_kmeans_k_clusters_9_feature_size_32_samples_128_feature_layer_convs.5_trunc_0.5.pkl' 
   k_th_cluster: 0
   use_mse_loss: False
 

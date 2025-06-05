@@ -96,7 +96,7 @@ class Visualizer:
                 # torch.save(self.samples,'./seed_3.z')
                 if self.generator.w_primary:
                     # torch.save(self.samples,'./seed_3.w')
-                    label = torch.zeros([n_images, G.c_dim], device=device)
+                    label = torch.zeros([n_samples, generator.c_dim], device=device)
                     self.samples  = generator.mapping(self.samples ,label,truncation_psi=0.7)
         else:
             try:

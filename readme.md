@@ -12,7 +12,7 @@ Official implementation and pre-trained models for "Towards Interpretable Face M
 
 ### 1.1 Download StyleGAN model first
 
-1. StyleGAN2-ada or StyleGAN2
+1. StyleGAN2 (recommended)
 
   - Download "stylegan2-ffhq-config-f.pt" here:
 
@@ -32,22 +32,33 @@ or
 
 > python test_stylegan2_ada.py
 
-3. see details on: 
+3. see more details on: 
 
 - https://github.com/rosinality/stylegan2-pytorch
 
 - https://github.com/NVlabs/stylegan2-ada-pytorch
 
-
 ### 1.2 Download Direction Model
 
-1. Download "most_recent_epoch6_best.pt" here  (as case 5 clusters on 32x32 features with layer depth 3): 
+1. Download Eye-related Direction model (k20_16x16_ Kmeans0_5_convs5_depth3_epoch6_best.pt) on (password: 1212): 
+
+    https://pan.baidu.com/s/12HK1HvnPrdVefgTPIa0ZwA?pwd=1212 
+
+2. Or download "most_recent_epoch6_best.pt" here  (as case 5 clusters on 32x32 features with layer depth 3): 
 
 https://drive.google.com/file/d/1tI72PrrZTFf-GsjMF1UgGGVnKADNdLqa/view?usp=sharing
 
-2. Save here "./checkpoint/direction_models/"
+or
 
-3. see './outputs/train.log' for details
+https://pan.baidu.com/s/1t2_76toz28Sd2ufFRWV2zg?pwd=1212 
+
+3. Download model put here: "./checkpoint/direction_models/"
+
+2. Run visual.py at Terminal to get eye-related morphing :
+
+   > python visual.py
+
+   see config file at: './utils/inference_config/visual_config_ffhq_eye_k20.yaml'
 
 ## 2.Visualization_Code (visual.py)
 

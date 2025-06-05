@@ -24,19 +24,20 @@ import pickle
 
 g_name = 'stylegan2' # 'stylegan2' or 'stylegan2-ada'
 k_clusters = 9 # 4*4 : 3  8*8 : 5  16*16 : 7  32*32 : 9 
-feature_size = 32 #pow(2,5) img_size = 512 or 1024
+feature_size = 16 #pow(2,5) img_size = 512 or 1024
 n = 1 # iteration for generating 样本生成的迭代次数
 per_iter = 100 # 单词迭代生成的特征样本，总样本数为 n * per_iter
 dataset='ffhq' # ffhq, horse, church, cat, car
 feature_layer = 'convs.5'
 truncation_alpha = 0.5 # 1， 0.7,  0.5
-kmean_save_path = './checkpoint/kmeans_segmentation/dataset_%s_kmeans_k_clusters_%d_feature_size_%d_samples_%d_feature_layer_%s_trunc_%s.pkl'%(dataset,k_clusters,feature_size,n*per_iter,feature_layer,truncation_alpha)
+kmean_save_path = './checkpoint/clustering_segmentation/dataset_%s_kmeans_k_clusters_%d_feature_size_%d_samples_%d_feature_layer_%s_trunc_%s.pkl'%(dataset,k_clusters,feature_size,n*per_iter,feature_layer,truncation_alpha)
 # n_samples_path = './checkpoint/latent_code.npy'
 
 # loading stylegan generator 加载预训练模型
 use_gpu = torch.cuda.is_available()
 device = torch.device("cuda" if use_gpu else "cpu")
-generator_path = './checkpoint/generators/stylegan2-ffhq-config-f.pt'
+#generator_path = './checkpoint/generators/stylegan2-ffhq-config-f.pt'
+generator_path = '/Users/apple/Desktop/my-code/MyPaper-Code/LFL_code/LLF_local_model/checkpoint/generators/stylegan2-ffhq-config-f.pt'
 generator = StyleGAN2Generator(device,truncation= truncation_alpha, feature_layer = feature_layer, use_w = False, checkpoint_path = generator_path, class_name=dataset)
 generator.eval()
 
@@ -81,13 +82,32 @@ for i in range(n):
 features_new = features.permute(0, 2, 3, 1).reshape(-1, features.shape[1]) #[bs, 512, 16, 16] -> [bs, 16, 16, 512] -> [bs, 512x16x16]
 arr = features_new.detach().cpu().numpy()
 
+
 #训练kmeans模型
-kmeans_model = KMeans(n_clusters=k_clusters, random_state=3, verbose=2)
-time_start=time.time()
-print('training start')
-kmeans_model.fit(arr)
-time_end=time.time()
-print('time cost: %s'%str(time_end-time_start))
-joblib.dump(kmeans_model,kmean_save_path)
+train_kmeans = False # True
+if train_kmeans == True:
+  kmeans_model = KMeans(n_clusters=k_clusters, random_state=3, verbose=2)
+  time_start=time.time()
+  print('training start')
+  kmeans_model.fit(arr)
+  time_end=time.time()
+  print('time cost: %s'%str(time_end-time_start))
+  joblib.dump(kmeans_model,kmean_save_path)
+
+# comparison GMM
+train_gmm = True
+gmm_save_path = './checkpoint/clustering_segmentation/dataset_%s_gmm_k_clusters_%d_feature_size_%d_samples_%d_feature_layer_%s_trunc_%s.pkl'%(dataset,k_clusters,feature_size,n*per_iter,feature_layer,truncation_alpha)
+if train_gmm == True:
+  from sklearn.mixture import GaussianMixture
+  GMM_model = GaussianMixture(n_components=k_clusters, random_state=3)
+  time_start=time.time()
+  print('training start')
+  kmeans_model.fit(arr)
+  time_end=time.time()
+  print('time cost: %s'%str(time_end-time_start))
+  joblib.dump(train_gmm,kmean_save_path)
+
+from sklearn.cluster import DBSCAN, SpectralClustering
+
 
 
