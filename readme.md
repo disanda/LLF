@@ -127,13 +127,13 @@ n_samples #样本个数 或 潜码文件 ./RFM_latentCLR/id1-i0-w600-norm301.878
 层数越少，方向值需越大 
 -->
 
-## 3. Learning Local features (kmeans.py)
+## 3. Learning Local features (cluster_method.py)
 
 ### 3.1 Train
 
-> python kmeans.py
+> python cluster_method.py
 
-- kmeans performed as segmentation model.
+- cluster_method performed as segmentation model (recommended kmeans).
 - segmentation clusters (feature sizes) within 3 (16x16), 5(16x16, 32x32), 7 (16x16, 32x32) , 9 (32x32, 64x64)
 - truncation_alpha = 0.5 (better)
 - results sava here: './results/segments/'
@@ -156,7 +156,7 @@ Save here:
 
 ### 3.3 Visualization
 
->python kmeans_test.py
+>python cluster_method_test.py
 
 
 ## 4. Learning direction model (train.py)
